@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Meta Tags Essenciais para SEO -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- Title Otimizado -->
+    <title>GJ Radio Online 🎵 | Reproductor de Radio Web Gratuito - Miles de Estaciones Mundiales</title>
+    
+    <!-- Meta Description Otimizada -->
+    <meta name="description" content="Escucha miles de estaciones de radio online gratuitamente. Reproductor web moderno con radios de todo el mundo. Fácil, rápido y seguro.">
+    
+    <!-- Keywords Otimizadas -->
+    <meta name="keywords" content="radio online, web radio, reproductor radio, estaciones de radio, radio gratis, música online, radio España, radio internacional, radio browser">
+    
+    <!-- Autor y Derechos -->
+    <meta name="author" content="Julio Gonzales">
+    <meta name="copyright" content="GJ Radio Online">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="GJ Radio Online 🎵 | Reproductor de Radio Web Gratuito">
+    <meta property="og:description" content="Escucha miles de estaciones de radio online gratuitamente. Reproductor web moderno con radios de todo el mundo.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gjradioonline.com">
+    <meta property="og:image" content="https://gjradioonline.com/img/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="GJ Radio Online">
+    <meta property="og:locale" content="es_ES">
+    
+    <!-- Favicon y Apple Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#2563EB" media="(prefers-color-scheme: dark)">
+    <meta name="msapplication-navbutton-color" content="#60A5FA">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Preload de Recursos Críticos -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" as="style" crossorigin>
+    <link rel="preload" href="img/2151063324.jpg" as="image">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    
+        <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://gjradioonline.com">
+    
+    <!-- Alternate Languages (se aplicável) -->
+    <link rel="alternate" hreflang="es-ES" href="https://gjradioonline.com/es">
+    <link rel="alternate" hreflang="pt-BR" href="https://gjradioonline.com">
+    <link rel="alternate" hreflang="en" href="https://gjradioonline.com/en">
+    <link rel="alternate" hreflang="x-default" href="https://gjradioonline.com">
+    
+    <!-- Estilos CSS Mejorados -->
+    <style>
+   
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="logo">GJ</div>
+            <div>Radio Online</div>
+        </div>
+
+        <div class="theme-switch" title="Cambiar tema">
+            <button id="theme-toggle" class="theme-btn" aria-label="Cambiar tema">
+                <i id="theme-icon" class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero-section">
+            <div class="hero-image-container">
+                <img src="img/vista-frontal-concentrado-dj-feminino.jpg" alt="Radio Web Online - Tu música sin límites" class="hero-image">
+            </div>
+            <div class="hero-content">
+                <h1>Tu Música, Sin Límites</h1>
+                <p>Sumérgete en miles de estaciones de radio de todo el mundo.</p>
+            </div>
+            <div class="image-credits">
+              <a href="https://br.freepik.com/fotos-gratis/vista-frontal-concentrado-dj-feminino_5795406.htm#fromView=image_search_similar&page=1&position=0&uuid=3c05a303-8942-420f-8609-48653d54db3c&query=+mulher+ouvindo+m%C3%BAsica+futurista">Imagem de freepik</a>
+            </div>
+        </section>
+        
+        <section class="controls">
+            <input id="search" placeholder="Buscar por nombre, etiqueta o país..." />
+            <select id="country">
+                <option value="">Todos los países</option>
+            </select>
+            <select id="tag">
+                <option value="">Todos los géneros</option>
+            </select>
+            <select id="limit">
+                <option value="50" selected>Top 50</option>
+                <option value="100">Top 100</option>
+                <option value="150">Top 150</option>
+                <option value="200">Top 200</option>
+                <option value="250">Top 250</option>
+                <option value="300">Top 300</option>
+                <option value="350">Top 350</option>
+                <option value="400">Top 400</option>
+                <option value="450">Top 450</option>
+                <option value="500">Top 500</option>
+                <option value="550">Top 550</option>
+                <option value="600">Top 600</option>
+                <option value="700">Top 700</option>
+                <option value="800">Top 800</option>
+                <option value="900">Top 900</option>
+                <option value="1000">Top 1000</option>
+                <option value="1100">Top 1100</option>
+                <option value="1200">Top 1200</option>
+                <option value="1300">Top 1300</option>
+            </select>
+            <button id="btn-refresh">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+            <div class="source-info">Fuente: Radio Browser (Seguro)</div>
+        </section>
+
+        <section class="favorites-section">
+            <h3><i class="fas fa-star" style="color: var(--accent-color);"></i> Favoritas</h3>
+            <div id="favorites-list"></div>
+            <div id="confirmation-modal" class="confirmation-modal">
+                <div class="confirmation-dialog">
+                    <div class="confirmation-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Eliminar de Favoritos</h3>
+                    </div>
+                    <div class="confirmation-body">
+                        <p>¿Estás seguro de que deseas eliminar esta radio de tus favoritos?</p>
+                    </div>
+                    <div class="confirmation-actions">
+                        <button class="confirm-btn cancel-btn">Cancelar</button>
+                        <button class="confirm-btn delete-btn">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="radio-section">
+            <h3><i class="fas fa-radio" style="color: var(--accent-color);"></i> Radios</h3>
+            <div id="radio-list" class="radio-list"></div>
+        </section>
+        
+    </main>
+    
+    <div id="player-container" aria-hidden="false">
+        <div class="player-wrapper">
+            <div class="player-left">
+                <img id="player-cover" src="" alt="Portada actual" style="display: none;" />
+                <div id="player-cover-fallback" class="player-cover-fallback" style="display: flex;">
+                    <i class="fas fa-compact-disc"></i>
+                </div>
+                <div class="player-info">
+                    <h4 id="player-title">Ninguna estación seleccionada</h4>
+                    <p id="player-sub">—</p>
+                    <div id="security-indicator" class="security-check">
+                         <i class="fas fa-shield-alt"></i> Verificación Pendiente...
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-controls">
+                
+                <button id="play-btn" class="play-btn" title="Reproducir/Pausar">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="mute-btn" class="small-btn" title="Silenciar">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                
+                <div class="visualizer" id="visualizer">
+                    </div>
+                
+                <div id="player-state" class="player-state">Detenido</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <audio id="audio" crossorigin="anonymous"></audio>
+
+    <footer>
+      <div class="footer-content">
+        <p>Desarrollado por <strong>Julio Gonzales</strong> © 2025 GJ Radio Online - Brasil</p>
+        
+        <div class="social-icons">
+          <a href="https://github.com/Julioheyner" title="GitHub" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://www.linkedin.com/in/julio-gonzales-31a723379" title="LinkedIn" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-linkedin-in"></i>
+          </a>
+          <a href="mailto:juliogonzales.dev@proton.me" title="Email">
+            <i class="fas fa-envelope"></i>
+          </a>
+        </div>
+        
+        <div class="legal-links">
+          <a href="#" onclick="showDisclaimer('privacy', 'Política de Privacidad'); return false;">
+            <i class="fas fa-user-shield"></i>
+            Política de Privacidad
+          </a>
+          <a href="#" onclick="showDisclaimer('terms', 'Términos de Uso'); return false;">
+            <i class="fas fa-file-signature"></i>
+            Términos de Uso
+          </a>
+          <a href="#" onclick="showDisclaimer('dmca', 'DMCA'); return false;">
+            <i class="fas fa-gavel"></i>
+            DMCA
+          </a>
+          <a href="#" onclick="showDisclaimer('about', 'Acerca de la App'); return false;">
+            <i class="fas fa-circle-info"></i>
+            Acerca de
+          </a>
+        </div>
+        
+        <div class="disclaimer">
+          <p><strong>Aviso Legal:</strong> GJ Radio Online es un agregador que enumera transmisiones de radio disponibles públicamente en Internet. No aloja ningún audio, y los derechos de autor del contenido transmitido pertenecen íntegramente a las propias estaciones de radio.</p>
+        </div>
+        
+      </div>
+    </footer>
+    
+    <div id="disclaimer-modal" class="confirmation-modal">
+      <div class="confirmation-dialog" style="max-width: 600px;">
+        <div class="confirmation-header">
+          <i class="fas fa-file-alt"></i>
+          <h3 id="disclaimer-title">Documento Legal</h3>
+        </div>
+        <div class="confirmation-body" id="disclaimer-content" style="text-align: left; max-height: 70vh; overflow-y: auto;">
+          </div>
+        <div class="confirmation-actions">
+          <button class="confirm-btn cancel-btn" onclick="hideDisclaimerModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+<!-- Schema.org Structured Data -->
+<script src="js/schema.js"></script>
+<!-- Analytics -->
+<script src="analytics.js"></script>
+<!-- Javascript -->
+<script src="script.js"></script>
+</body>
+</html>
