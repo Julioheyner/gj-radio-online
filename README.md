@@ -5,36 +5,36 @@ README.md
 
 ## 🌟 Descripción
 
-**GJ Radio Online** es un reproductor de radio web moderno, seguro y de código abierto que te permite acceder a miles de estaciones de radio de todo el mundo directamente desde tu navegador. Con una interfaz intuitiva y funciones avanzadas, disfruta de tu música favorita sin límites.
+GJ Radio Online es un reproductor de radio web moderno, seguro y de código abierto que te permite acceder a miles de estaciones de radio de todo el mundo directamente desde tu navegador. Con una interfaz intuitiva y funciones avanzadas, disfruta de tu música favorita sin límites.
 
 ## 🚀 Características
 
 ### ✨ Interfaz Moderna
-- **Diseño Responsive** - Adaptable a cualquier dispositivo
-- **Modo Claro/Oscuro** - Cambio automático según preferencias del sistema
-- **UX Mejorada** - Navegación fluida y elementos visuales atractivos
-- **Animaciones Suaves** - Transiciones y efectos visuales elegantes
+- Diseño Responsive - Adaptable a cualquier dispositivo
+- Modo Claro/Oscuro - Cambio automático según preferencias del sistema
+- UX Mejorada - Navegación fluida y elementos visuales atractivos
+- Animaciones Suaves - Transiciones y efectos visuales elegantes
 
 ### 🎵 Funcionalidades de Audio
-- **Reproductor Avanzado** - Controles intuitivos y visualizador de audio
-- **Búsqueda Inteligente** - Filtrado por nombre, país y género musical
-- **Sistema de Favoritos** - Guarda tus estaciones preferidas localmente
-- **Indicador Visual** - Muestra qué estación se está reproduciendo actualmente
+- Reproductor Avanzado - Controles intuitivos y visualizador de audio
+- Búsqueda Inteligente - Filtrado por nombre, país y género musical
+- Sistema de Favoritos - Guarda tus estaciones preferidas localmente
+- Indicador Visual - Muestra qué estación se está reproduciendo actualmente
 
 ### 🔒 Seguridad
-- **Protección XSS** - Sanitización de datos y URLs
-- **Filtrado de Enlaces** - Verificación de seguridad en streams de audio
-- **Privacidad** - Sin recolección de datos personales
+- Protección XSS - Sanitización de datos y URLs
+- Filtrado de Enlaces - Verificación de seguridad en streams de audio
+- Privacidad - Sin recolección de datos personales
 
 ### 🌍 Compatibilidad
-- **Navegadores Modernos** - Chrome, Firefox, Safari, Edge
-- **Dispositivos Móviles** - Optimizado para smartphones y tablets
-- **API Radio Browser** - Acceso a miles de estaciones internacionales
+- Navegadores Modernos - Chrome, Firefox, Safari, Edge
+- Dispositivos Móviles - Optimizado para smartphones y tablets
+- API Radio Browser - Acceso a miles de estaciones internacionales
 
 ## 🎯 Demo
 
 Puedes probar la aplicación en vivo aquí:  
-**[🔗 Demo en Vivo](deploy em andamento)**
+[🔗 Demo en Vivo](deploy em andamento)
 
 ## 🛠️ Instalación
 
@@ -43,7 +43,7 @@ Puedes probar la aplicación en vivo aquí:
 - Conexión a Internet
 
 ### Instalación Local
-1. **Clona el repositorio:**
+1. Clona el repositorio:
 ```bash
 git clone https://github.com/Julioheyner
 cd gj-radio-online
