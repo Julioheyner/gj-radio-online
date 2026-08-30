@@ -1,266 +1,248 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Meta Tags Essenciais para SEO -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    
-    <!-- Title Otimizado -->
-    <title>🎵 GJ Radio Online  | Reproductor de Radio Web Gratuito - Miles de Estaciones Mundiales</title>
-    
-    <!-- Meta Description Otimizada -->
-    <meta name="description" content="Escucha miles de estaciones de radio online gratuitamente. Reproductor web moderno con radios de todo el mundo. Fácil, rápido y seguro.">
-    
-    <!-- Keywords Otimizadas -->
-    <meta name="keywords" content="radio online, web radio, reproductor radio, estaciones de radio, radio gratis, música online, radio España, radio internacional, radio browser">
-    
-    <!-- Autor y Derechos -->
-    <meta name="author" content="Julio Gonzales">
-    <meta name="copyright" content="GJ Radio Online">
-    <meta name="robots" content="index, follow, max-image-preview:large">
-    
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="GJ Radio Online 🎵 | Reproductor de Radio Web Gratuito">
-    <meta property="og:description" content="Escucha miles de estaciones de radio online gratuitamente. Reproductor web moderno con radios de todo el mundo.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://gjradioonline.com">
-    <meta property="og:image" content="https://gjradioonline.com/img/og-image.jpg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:site_name" content="GJ Radio Online">
-    <meta property="og:locale" content="es_ES">
-    
-    <!-- Favicon y Apple Touch Icons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
-    <link rel="manifest" href="/manifest.json">
-    
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#2563EB" media="(prefers-color-scheme: dark)">
-    <meta name="msapplication-navbutton-color" content="#60A5FA">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Preload de Recursos Críticos -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" as="style" crossorigin>
-    <link rel="preload" href="img/2151063324.jpg" as="image">
-    
-    <!-- CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
-    
-        <!-- CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#14100d" id="themeColorMeta">
+    <meta name="description" content="GJ Radio · escuta milhares de emissoras de rádio online de todo o mundo.">
+    <!-- Política de Seguridad de Contenido: restringe qué recursos externos -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+        font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;
+        img-src 'self' https: data:;
+        media-src https: blob:;
+        connect-src 'self' https://*.api.radio-browser.info;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-src 'none';
+    ">
+    <title>GJ Radio Online</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://gjradioonline.com">
-    
-    <!-- Alternate Languages (se aplicável) -->
-    <link rel="alternate" hreflang="es-ES" href="https://gjradioonline.com/es">
-    <link rel="alternate" hreflang="pt-BR" href="https://gjradioonline.com">
-    <link rel="alternate" hreflang="en" href="https://gjradioonline.com/en">
-    <link rel="alternate" hreflang="x-default" href="https://gjradioonline.com">
-    
-    <!-- Estilos CSS Mejorados -->
-    <style>
-   
-    </style>
 </head>
 <body>
-
-    <header>
-        <div class="brand">
-            <div class="logo">GJ</div>
-            <div>Radio Online</div>
+    <!-- Barra de herramientas -->
+    <header class="toolbar">
+        <div class="title">
+            <span class="logo">GJ</span>
+            <span>Radio Online</span>
         </div>
-
-        <div class="theme-switch" title="Cambiar tema">
-            <button id="theme-toggle" class="theme-btn" aria-label="Cambiar tema">
-                <i id="theme-icon" class="fas fa-moon"></i>
+        <div class="actions">
+            <span class="conn-status" id="connStatus"><span class="dot"></span><span id="connLabel">En línea</span></span>
+            <button id="themeToggle" aria-label="Cambiar tema" aria-pressed="false">
+                <i class="fas fa-moon" id="themeIcon"></i>
             </button>
         </div>
     </header>
 
-    <main>
-        <section id="hero-section">
-            <div class="hero-image-container">
-                <img src="img/vista-frontal-concentrado-dj-feminino.jpg" alt="Radio Web Online - Tu música sin límites" class="hero-image">
-            </div>
+    <!-- Contenido principal -->
+    <div class="app-content">
+        <!-- HERO -->
+        <section class="hero" aria-label="GJ Radio">
+            <img src="img/sunriseforever-jacket-3184773.jpg" alt="Radio Online" loading="eager" fetchpriority="high">
+
             <div class="hero-content">
-                <h1>Tu Música, Sin Límites</h1>
-                <p>Sumérgete en miles de estaciones de radio de todo el mundo.</p>
-            </div>
-            <div class="image-credits">
-              <a href="https://br.freepik.com/fotos-gratis/vista-frontal-concentrado-dj-feminino_5795406.htm#fromView=image_search_similar&page=1&position=0&uuid=3c05a303-8942-420f-8609-48653d54db3c&query=+mulher+ouvindo+m%C3%BAsica+futurista"
-target="_blank"
-rel="noopener noreferrer"
-aria-label="Créditos da imagem - abre em nova aba">Imagem de Magnific 
-</a>
-            </div>
-        </section>
-        
-        <section class="controls">
-            <input id="search" placeholder="Buscar por nombre, etiqueta o país..." />
-            <select id="country">
-                <option value="">Todos los países</option>
-            </select>
-            <select id="tag">
-                <option value="">Todos los géneros</option>
-            </select>
-            <select id="limit">
-                <option value="50" selected>Top 50</option>
-                <option value="100">Top 100</option>
-                <option value="150">Top 150</option>
-                <option value="200">Top 200</option>
-                <option value="250">Top 250</option>
-                <option value="300">Top 300</option>
-                <option value="350">Top 350</option>
-                <option value="400">Top 400</option>
-                <option value="450">Top 450</option>
-                <option value="500">Top 500</option>
-                <option value="550">Top 550</option>
-                <option value="600">Top 600</option>
-                <option value="700">Top 700</option>
-                <option value="800">Top 800</option>
-                <option value="900">Top 900</option>
-                <option value="1000">Top 1000</option>
-                <option value="1100">Top 1100</option>
-                <option value="1200">Top 1200</option>
-                <option value="1300">Top 1300</option>
-            </select>
-            <button id="btn-refresh">
-                <i class="fas fa-sync-alt"></i> Actualizar
-            </button>
-            <div class="source-info">Fuente: Radio Browser (Seguro)</div>
-        </section>
-
-        <section class="favorites-section">
-            <h3><i class="fas fa-star" style="color: var(--accent-color);"></i> Favoritas</h3>
-            <div id="favorites-list"></div>
-            <div id="confirmation-modal" class="confirmation-modal">
-                <div class="confirmation-dialog">
-                    <div class="confirmation-header">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Eliminar de Favoritos</h3>
-                    </div>
-                    <div class="confirmation-body">
-                        <p>¿Estás seguro de que deseas eliminar esta radio de tus favoritos?</p>
-                    </div>
-                    <div class="confirmation-actions">
-                        <button class="confirm-btn cancel-btn">Cancelar</button>
-                        <button class="confirm-btn delete-btn">Eliminar</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <section class="radio-section">
-            <h3><i class="fas fa-radio" style="color: var(--accent-color);"></i> Radios</h3>
-            <div id="radio-list" class="radio-list"></div>
-        </section>
-        
-    </main>
-    
-    <div id="player-container" aria-hidden="false">
-        <div class="player-wrapper">
-            <div class="player-left">
-                <img id="player-cover" src="" alt="Portada actual" style="display: none;" />
-                <div id="player-cover-fallback" class="player-cover-fallback" style="display: flex;">
-                    <i class="fas fa-compact-disc"></i>
-                </div>
-                <div class="player-info">
-                    <h4 id="player-title">Ninguna estación seleccionada</h4>
-                    <p id="player-sub">—</p>
-                    <div id="security-indicator" class="security-check">
-                         <i class="fas fa-shield-alt"></i> Verificación Pendiente...
-                    </div>
-                </div>
+                <span class="hero-eyebrow"><span class="live-pulse" aria-hidden="true"></span> En vivo · 24&nbsp;horas</span>
+                <h1 class="hero-title">
+                    Siente el tono,<br>
+                    <span class="highlight">vive la música</span>
+                </h1>
+                <p class="hero-sub">Miles de emisoras del mundo, en un solo lugar</p>
             </div>
 
-            <div class="player-controls">
-                
-                <button id="play-btn" class="play-btn" title="Reproducir/Pausar">
-                    <i class="fas fa-play"></i>
+           <div class="hero-credits">
+    <i class="fas fa-camera"></i>
+    <a href="https://pixabay.com/pt/photos/jaqueta-rua-cidade-grafite-3184773/" target="_blank" rel="noopener noreferrer">By Sunrise en Pixabay</a> 
+</div>
+        </section>
+
+        <!-- SECCIÓN INICIO (radios) -->
+        <div class="section active" id="sectionHome" role="tabpanel" aria-labelledby="navHome">
+            <!-- Buscador - NO STICKY -->
+            <form class="search-wrapper" id="search" role="search" onsubmit="return false;">
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                <label for="searchInput" class="sr-only">Buscar emisora o país</label>
+                <input type="text" id="searchInput" placeholder="Buscar emisora o país..." autocomplete="off" enterkeyhint="search" />
+                <button type="button" class="search-clear" id="searchClear" aria-label="Borrar búsqueda"><i class="fas fa-times"></i></button>
+                <div class="filters">
+                    <label for="countrySelect" class="sr-only">País</label>
+                    <select id="countrySelect"><option value="">País</option></select>
+                    <label for="limitSelect" class="sr-only">Cantidad de resultados</label>
+                    <select id="limitSelect" class="limit-select">
+                        <option value="48">48</option>
+                        <option value="96" selected>96</option>
+                        <option value="144">144</option>
+                        <option value="200">200</option>
+                        <option value="250">250</option>
+                        <option value="300">300</option>
+                        <option value="350">350</option>
+                        <option value="400">400</option>
+                    </select>
+                    <button type="button" class="btn-refresh" id="refreshBtn"><i class="fas fa-sync-alt"></i> <span>Actualizar</span></button>
+                    <span class="source-badge"><i class="fas fa-shield-alt"></i> Radio Browser</span>
+                </div>
+            </form>
+
+            <!-- Resumen -->
+            <div class="results-bar" id="resultsBar" aria-live="polite"></div>
+
+            <!-- Grid de emisoras -->
+            <div class="station-grid" id="stationGrid"></div>
+
+            <!-- Botón Buscar más -->
+            <div class="load-more-wrapper">
+                <button class="load-more-btn" id="loadMoreBtn">
+                    <i class="fas fa-plus-circle"></i> Buscar más radios
                 </button>
-                <button id="mute-btn" class="small-btn" title="Silenciar">
-                    <i class="fas fa-volume-up"></i>
+            </div>
+        </div>
+
+        <!-- SECCIÓN FAVORITOS -->
+        <div class="section" id="sectionFavorites" role="tabpanel" aria-labelledby="navFavorites">
+            <h2 style="font-size:clamp(1rem, 1.3vw, 1.3rem); margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-star" style="color:var(--accent);"></i> Favoritas
+            </h2>
+            <div class="favorites-grid" id="favoritesGrid">
+                <div class="state-message"><i class="fas fa-heart big-icon"></i><h4>Aún no hay favoritas</h4><p>Toca el corazón de cualquier emisora para guardarla aquí.</p></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="brand">
+                <i class="fas fa-radio" style="color:var(--accent);"></i>
+                GJ <span>Radio</span> Online
+            </div>
+            <div class="divider"></div>
+            <div class="links">
+                <!-- Botón de compartir en el footer - abre modal -->
+                <button class="share-btn-footer" id="shareAppBtn" aria-label="Compartir esta aplicación">
+                    <i class="fas fa-share-nodes"></i> Compartir
                 </button>
-                
-                <div class="visualizer" id="visualizer">
-                    </div>
-                
-                <div id="player-state" class="player-state">Detenido</div>
+                <span class="link-divider"></span>
+                <a href="#" onclick="showDisclaimer('privacy','Política de Privacidad'); return false;">
+                    <i class="fas fa-user-shield"></i> Privacidad
+                </a>
+                <a href="#" onclick="showDisclaimer('terms','Términos de Uso'); return false;">
+                    <i class="fas fa-file-signature"></i> Términos
+                </a>
+                <a href="#" onclick="showDisclaimer('dmca','DMCA'); return false;">
+                    <i class="fas fa-gavel"></i> DMCA
+                </a>
+                <a href="#" onclick="showDisclaimer('about','Acerca de'); return false;">
+                    <i class="fas fa-circle-info"></i> Acerca de
+                </a>
+                <span class="link-divider"></span>
+                <a href="https://github.com/Julioheyner" target="_blank" rel="noopener">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="https://www.linkedin.com/in/julio-gonzales-31a723379" target="_blank" rel="noopener">
+                    <i class="fab fa-linkedin-in"></i> LinkedIn
+                </a>
+                <a href="mailto:juliogonzales.dev@proton.me">
+                    <i class="fas fa-envelope"></i> Email
+                </a>
+            </div>
+            <div class="disclaimer">
+                <strong>Aviso:</strong> GJ Radio Online es un agregador de radios en línea. No recopila, almacena ni comparte datos personales. Las transmisiones se realizan directamente desde las fuentes externas.
+            </div>
+            <div class="copyright">
+                Desarrollado con <i class="fa-solid fa-mug-hot" style="color:var(--accent); font-size:0.95em;" aria-hidden="true"></i> por <strong class="dev-name">Julio Gonzales</strong> © 2025 - Brasil
+            </div>
+        </footer>
+    </div>
+
+    <!-- REPRODUCTOR -->
+    <div class="player" id="player" role="region" aria-label="Reproductor de radio">
+        <div class="cover" id="playerCover"><i class="fas fa-compact-disc"></i></div>
+        <div class="track">
+            <h4 id="playerTitle">Ninguna emisora</h4>
+            <div class="sub" id="playerSub">—</div>
+            <div class="security" id="securityIndicator"><i class="fas fa-shield-alt"></i> Verificando...</div>
+        </div>
+        <div class="visualizer" id="visualizer" aria-hidden="true"></div>
+        <div class="controls">
+            <button id="muteBtn" aria-label="Silenciar" aria-pressed="false"><i class="fas fa-volume-up"></i></button>
+            <button class="play-btn" id="playBtn" aria-label="Reproducir"><i class="fas fa-play"></i></button>
+            <button class="close-btn" id="closePlayerBtn" aria-label="Cerrar reproductor"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+
+    <!-- Botón para volver al inicio de la página -->
+    <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Volver arriba" type="button">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- NAVEGACIÓN INFERIOR -->
+    <nav class="bottom-nav" id="bottomNav" role="tablist" aria-label="Navegación principal">
+        <button class="nav-item active" id="navHome" data-section="sectionHome" role="tab" aria-selected="true">
+            <i class="fas fa-compact-disc"></i>
+            <span>Radios</span>
+        </button>
+        <button class="nav-item" id="navFavorites" data-section="sectionFavorites" role="tab" aria-selected="false">
+            <i class="fas fa-heart"></i>
+            <span>Favoritas</span>
+            <span class="badge" id="favBadge" style="display:none;">0</span>
+        </button>
+    </nav>
+
+    <!-- TOAST -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- MODAL DE COMPARTIR - Estiloso, moderno y profesional -->
+    <div class="share-modal-overlay" id="shareModalOverlay" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+        <div class="share-modal">
+            <div class="share-modal-header">
+                <h3 id="shareModalTitle"><i class="fas fa-share-nodes"></i> Compartir</h3>
+                <button class="share-modal-close" id="shareModalClose" aria-label="Cerrar modal de compartir">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="share-modal-subtitle">
+                Comparte <strong>GJ Radio Online</strong> con tus amigos y familiares
+            </div>
+            <div class="share-modal-grid">
+                <button class="share-modal-btn" data-network="whatsapp" aria-label="Compartir por WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </button>
+                <button class="share-modal-btn" data-network="telegram" aria-label="Compartir por Telegram">
+                    <i class="fab fa-telegram"></i>
+                    <span>Telegram</span>
+                </button>
+                <button class="share-modal-btn" data-network="x" aria-label="Compartir por X">
+                    <i class="fab fa-x-twitter"></i>
+                    <span>X</span>
+                </button>
+                <button class="share-modal-btn" data-network="facebook" aria-label="Compartir por Facebook">
+                    <i class="fab fa-facebook"></i>
+                    <span>Facebook</span>
+                </button>
+            </div>
+            <div class="share-modal-footer">
+                <button id="copyLinkBtn"><i class="fas fa-copy"></i> Copiar enlace</button>
             </div>
         </div>
     </div>
 
-    <div id="toast-container"></div>
-
-    <audio id="audio" crossorigin="anonymous"></audio>
-
-    <footer>
-      <div class="footer-content">
-        <p>Desarrollado por <strong>Julio Gonzales</strong> © 2025 GJ Radio Online - Brasil</p>
-        
-        <div class="social-icons">
-          <a href="https://github.com/Julioheyner" title="GitHub" target="_blank" rel="noopener noreferrer">
-            <i class="fab fa-github"></i>
-          </a>
-          <a href="https://www.linkedin.com/in/julio-gonzales-31a723379" title="LinkedIn" target="_blank" rel="noopener noreferrer">
-            <i class="fab fa-linkedin-in"></i>
-          </a>
-          <a href="mailto:juliogonzales.dev@proton.me" title="Email">
-            <i class="fas fa-envelope"></i>
-          </a>
+    <!-- MODAL CONFIRMACIÓN (eliminar favorita) -->
+    <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal">
+            <h3 id="modalTitle"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> ¿Eliminar favorita?</h3>
+            <p>Esta emisora se eliminará de tu lista de favoritas.</p>
+            <div class="actions">
+                <button class="cancel" id="modalCancel">Cancelar</button>
+                <button class="danger" id="modalConfirm">Eliminar</button>
+            </div>
         </div>
-        
-        <div class="legal-links">
-          <a href="#" onclick="showDisclaimer('privacy', 'Política de Privacidad'); return false;">
-            <i class="fas fa-user-shield"></i>
-            Política de Privacidad
-          </a>
-          <a href="#" onclick="showDisclaimer('terms', 'Términos de Uso'); return false;">
-            <i class="fas fa-file-signature"></i>
-            Términos de Uso
-          </a>
-          <a href="#" onclick="showDisclaimer('dmca', 'DMCA'); return false;">
-            <i class="fas fa-gavel"></i>
-            DMCA
-          </a>
-          <a href="#" onclick="showDisclaimer('about', 'Acerca de la App'); return false;">
-            <i class="fas fa-circle-info"></i>
-            Acerca de
-          </a>
-        </div>
-        
-        <div class="disclaimer">
-          <p><strong>Aviso Legal:</strong> GJ Radio Online es un agregador que enumera transmisiones de radio disponibles públicamente en Internet. No aloja ningún audio, y los derechos de autor del contenido transmitido pertenecen íntegramente a las propias estaciones de radio.</p>
-        </div>
-        
-      </div>
-    </footer>
-    
-    <div id="disclaimer-modal" class="confirmation-modal">
-      <div class="confirmation-dialog" style="max-width: 600px;">
-        <div class="confirmation-header">
-          <i class="fas fa-file-alt"></i>
-          <h3 id="disclaimer-title">Documento Legal</h3>
-        </div>
-        <div class="confirmation-body" id="disclaimer-content" style="text-align: left; max-height: 70vh; overflow-y: auto;">
-          </div>
-        <div class="confirmation-actions">
-          <button class="confirm-btn cancel-btn" onclick="hideDisclaimerModal()">Cerrar</button>
-        </div>
-      </div>
     </div>
-
-<!-- Schema.org Structured Data -->
-<script src="js/schema.js"></script>
-<!-- Analytics -->
-<script src="analytics.js"></script>
-<!-- Javascript -->
+<!-- JavaScript -->
 <script src="script.js"></script>
 </body>
 </html>
