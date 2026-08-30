@@ -1,1020 +1,1201 @@
- //==============================
- // EFECTO DE LA IMAGEN DEL HERO 
- //==============================
+ //LÓGICA DE LA WEB RADIO APP 
+ (function() {
+            "use strict";
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const heroSection = document.getElementById('hero-section');
-        
-        window.addEventListener('scroll', function() {
-            const scrolled = window.pageYOffset;
-            
-            if (heroSection) {
-                if (scrolled > 50) {
-                    heroSection.classList.add('scrolled');
-                } else {
-                    heroSection.classList.remove('scrolled');
-                }
-            }
-        });
-    });
-    
-    // =================================================
-    // CONFIGURACIONES DE SEGURIDAD Y PALETA DE COLORES
-    // =================================================
-    
-    const API_BASE = "https://de1.api.radio-browser.info/json";
-    const radioListEl = document.getElementById('radio-list');
-    const favoritesListEl = document.getElementById('favorites-list');
-    const searchInput = document.getElementById('search');
-    const limitSelect = document.getElementById('limit');
-    const btnRefresh = document.getElementById('btn-refresh');
-    const countrySelect = document.getElementById('country');
-    const tagSelect = document.getElementById('tag');
-    
-    const audio = document.getElementById('audio');
-    const playBtn = document.getElementById('play-btn');
-    const muteBtn = document.getElementById('mute-btn');
-    const playerCover = document.getElementById('player-cover');
-    const playerCoverFallback = document.getElementById('player-cover-fallback');
-    const playerTitle = document.getElementById('player-title');
-    const playerSub = document.getElementById('player-sub');
-    const playerState = document.getElementById('player-state');
-    const visualizer = document.getElementById('visualizer');
-    const securityIndicator = document.getElementById('security-indicator');
-    
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    
-    let stations = [];
-    let currentStation = null;
-    let favorites = JSON.parse(localStorage.getItem('gr_favs') || "[]");
-    let visualizerBars = [];
-    let visualizerInterval;
-    let isPlaying = false;
-    let pendingDeleteStationId = null;
-    let currentlyPlayingCard = null;
-    
-    //========================
-    //  MODAL DE CONFIRMACIÓN
-    //========================
+            // ---------- Referencias del DOM ----------
+            const sectionHome = document.getElementById('sectionHome');
+            const sectionFav = document.getElementById('sectionFavorites');
+            const navItems = document.querySelectorAll('.nav-item');
+            const stationGrid = document.getElementById('stationGrid');
+            const favoritesGrid = document.getElementById('favoritesGrid');
+            const searchInput = document.getElementById('searchInput');
+            const searchClear = document.getElementById('searchClear');
+            const countrySelect = document.getElementById('countrySelect');
+            const limitSelect = document.getElementById('limitSelect');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const resultsBar = document.getElementById('resultsBar');
+            const favBadge = document.getElementById('favBadge');
+            const connStatus = document.getElementById('connStatus');
+            const connLabel = document.getElementById('connLabel');
 
-    const confirmationModal = document.getElementById('confirmation-modal');
-    const cancelBtn = document.querySelector('.cancel-btn');
-    const deleteBtn = document.querySelector('.delete-btn');
-    const disclaimerModal = document.getElementById('disclaimer-modal');
-    const disclaimerTitle = document.getElementById('disclaimer-title');
-    const disclaimerContent = document.getElementById('disclaimer-content');
-    
-    // =======================
-    // 1. SEGURIDAD AVANZADA
-    // =======================
-    
-    const SECURITY_CONFIG = {
-      ALLOWED_AUDIO_DOMAINS: [
-        'radio-browser.info', 'stream.radio-browser.info', 'radio-browser.net', 'stream.radio-browser.net',
-        'icecast', 'stream', 'radio', 'live', 'broadcast', 'listen'
-      ],
-      ALLOWED_PROTOCOLS: ['http:', 'https:'],
-      SUSPICIOUS_PATTERNS: [
-        /javascript:/i, /data:text\/html/i, /<script/i, /onerror=/i, /onload=/i, /document\./i, /window\./i
-      ]
-    };
-    
-    function sanitizeHTML(text) {
-      if (typeof text !== 'string') return '';
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-    
-    function checkAudioURLSecurity(url) {
-      if (!url || typeof url !== 'string') return 'unsafe';
-      
-      try {
-        const urlObj = new URL(url);
-        const domain = urlObj.hostname.toLowerCase();
-        
-        if (!SECURITY_CONFIG.ALLOWED_PROTOCOLS.includes(urlObj.protocol)) {
-          console.warn('Protocolo no permitido:', urlObj.protocol);
-          return 'unsafe';
-        }
-        for (const pattern of SECURITY_CONFIG.SUSPICIOUS_PATTERNS) {
-          if (pattern.test(url)) {
-            console.warn('URL contiene patrón sospechoso:', pattern);
-            return 'unsafe';
-          }
-        }
-        
-        for (const allowed of SECURITY_CONFIG.ALLOWED_AUDIO_DOMAINS) {
-          if (domain.includes(allowed)) {
-            return 'safe';
-          }
-        }
-        
-        console.warn('Dominio de audio no verificado por el filtro riguroso:', domain);
-        return 'partial';
-        
-      } catch (error) {
-        console.warn('URL inválida o error de parse:', error);
-        return 'unsafe';
-      }
-    }
-    
-    function escapeHtml(s){ 
-        if(!s) return ''; 
-        return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); 
-    }
-    
-// ============================
-// 2. CONTENIDO LEGAL (Footer)
-// ============================
+            const player = document.getElementById('player');
+            const playerCover = document.getElementById('playerCover');
+            const playerTitle = document.getElementById('playerTitle');
+            const playerSub = document.getElementById('playerSub');
+            const securityIndicator = document.getElementById('securityIndicator');
+            const visualizer = document.getElementById('visualizer');
+            const playBtn = document.getElementById('playBtn');
+            const muteBtn = document.getElementById('muteBtn');
+            const closePlayerBtn = document.getElementById('closePlayerBtn');
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            const audio = new Audio();
+            audio.crossOrigin = 'anonymous';
 
-const LEGAL_CONTENT = {
-    privacy: `
-        <section>
-            
-            <div>
-                <p style="font-size: 0.77rem">*Información sobre Recolección de Datos:</p>
-                <p style="font-size: 0.77rem">Esta aplicación funciona como un agregador educativo de estaciones de radio en línea. Con fines de transparencia, informamos que:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>No recolectamos datos personales identificables</strong> (nombre, correo electrónico, ubicación, etc.)</li>
-                    <li><strong>No utilizamos cookies de rastreo</strong> o tecnologías similares</li>
-                    <li><strong>No compartimos datos</strong> con terceros, ya que no recolectamos información sensible</li>
-                </ul>
-                
-                <p style="font-size: 0.77rem">*Almacenamiento Local (visitante):</p>
-                <p style="font-size: 0.77rem">La aplicación utiliza tecnologías estándar del navegador (LocalStorage) para mejorar su experiencia:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Estaciones favoritas:</strong> IDs técnicos de las radios para reconstruir su lista</li>
-                    <li><strong>Preferencia de tema:</strong> Configuración visual (claro/oscuro)</li>
-                    <li><strong>Configuraciones de reproducción:</strong> Volumen y otras preferencias temporales</li>
-                </ul>
-                
-                <p style="font-size: 0.77rem">Información Técnica sobre Streaming:</p>
-                <p style="font-size: 0.77rem">Las transmisiones de audio se establecen directamente entre su dispositivo y los servidores de las estaciones de radio. Este proceso:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Está sujeto a las políticas de privacidad de cada estación</strong></li>
-                    <li><strong>Utiliza conexiones estándar HTTPS cuando están disponibles</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem">*Derechos del Usuario Visitante:</p>
-                <p style="font-size: 0.77rem">Puede limpiar todos los datos locales en cualquier momento a través de la configuración de su navegador.</p>
-            </div>
-        </section>
-    `,
-    
-    terms: `
-        <section>
-            
-            <div>
-                <p><strong>Finalidad Educativa</strong></p>
-                <p style="font-size: 0.77rem">Esta aplicación se proporciona como un proyecto educativo para demostración de tecnologías web. Al utilizarla, usted reconoce que:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>El servicio se proporciona "tal cual está"</strong></li>
-                    <li><strong>No hay garantías de disponibilidad continua o corrección de fallos</strong></li>
-                    <li><strong>La aplicación funciona como agregador de enlaces públicos</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Responsabilidades del Usuario:</strong></p>
-                <p style="font-size: 0.77rem">Con fines educativos sobre el uso responsable de tecnología, usted acepta:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Utilizar la aplicación solo para fines lícitos y educativos</strong></li>
-                    <li><strong>Respetar los derechos de propiedad intelectual de las estaciones</strong></li>
-                    <li><strong>Comprender que el contenido transmitido es responsabilidad de las estaciones</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Limitaciones Educativas:</strong></p>
-                <ul style="font-size: 0.77rem">
-                    <li><strong>No somos responsables de la disponibilidad o calidad de las transmisiones</strong></li>
-                    <li><strong>El listado de estaciones se obtiene de fuentes públicas de terceros</strong></li>
-                    <li><strong>Podemos modificar o descontinuar el servicio con fines educativos</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Contenido de Terceros:</strong></p>
-                <p style="font-size: 0.77rem">Las estaciones de radio son entidades independientes. Recomendamos verificar los términos de uso de cada estación.</p>
-            </div>
-        </section>
-    `,
-    
-    dmca: `
-        <section>
-            
-            <div>
-                <p style="font-size: 0.77rem">Política DMCA - Cumplimiento Educativo</p>
-                
-                <p style="font-size: 0.77rem"><strong>Aviso Informativo sobre DMCA:</strong></p>
-                <p style="font-size: 0.77rem">La Digital Millennium Copyright Act (DMCA) es una ley estadounidense que aborda los derechos de autor en el entorno digital. Esta aplicación:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Respetamos los derechos de autor</strong> y apoyamos la protección legal del contenido</li>
-                    <li><strong>No alojamos contenido de audio</strong>, solo proporcionamos enlaces a transmisiones públicas</li>
-                    <li><strong>Somos un servicio técnico</strong> que utiliza datos de la API pública de Radio Browser</li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Procedimiento Técnico DMCA:</strong></p>
-                <p style="font-size: 0.77rem">Para efectos de cumplimiento y educación sobre DMCA, el proceso es:</p>
-                
-                <ol style="font-size: 0.77rem">
-                    <li><strong>Identificación del enlace</strong> que considera infractor</strong></li>
-                    <li><strong>Verificación en Radio-Browser.info</strong> (fuente primaria de datos)</strong></li>
-                    <li><strong>Contacto directo con la estación</strong> de radio transmisora</strong></li>
-                    <li><strong>Notificación formal por escrito</strong> a nuestro contacto educativo</strong></li>
-                </ol>
-                
-                <p style="font-size: 0.77rem"><strong>Información Requerida para Notificación DMCA:</strong></p>
-                <p style="font-size: 0.77rem">Para fines educativos sobre notificaciones DMCA apropiadas, estas deben incluir:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Firma física o electrónica del propietario de derechos</strong></li>
-                    <li><strong>Identificación de la obra protegida supuestamente infringida</strong></li>
-                    <li><strong>URL específica del enlace en nuestra aplicación</strong></li>
-                    <li><strong>Información de contacto del reclamante</strong></li>
-                    <li><strong>Declaración de buena fe sobre la reclamación</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Límites Técnicos del Servicio:</strong></p>
-                <p style="font-size: 0.77rem">Debido a nuestra naturaleza técnica como agregador educativo:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li><strong>No podemos controlar el contenido de las transmisiones en vivo</strong></li>
-                    <li><strong>Los enlaces se actualizan automáticamente desde fuentes públicas</strong></li>
-                    <li><strong>Solo podemos remover enlaces específicos de nuestra caché temporal</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Contacto para Notificaciones DMCA:</strong></p>
-                <p style="font-size: 0.77rem">Para notificaciones formales relacionadas con DMCA:</p>
-                <p style="font-size: 0.77rem">Email: <strong>juliogonzales.dev@proton.me</strong></p>
-                <p>
-                    <p style=" font-size: 0.77rem; font-style: italic; font-weight: 600; margin-top: 10px">Nota: Este es un proyecto educativo. Las notificaciones DMCA serán procesadas como material de estudio sobre cumplimiento legal digital.</p>
-                </p>
-            </div>
-        </section>
-    `,
-    
-    about: `
-        <section>
-            
-            <div>
-                <p style="font-size: 0.77rem">Sobre Este Proyecto Educativo</p>
-                <p style="font-size: 0.77rem">Este proyecto fue desarrollado como demostración educativa de:</p>
-                
-                <ul style="font-size: 0.77rem">
-                    <li>Desarrollo web moderno con JavaScript</strong></li>
-                    <li>Consumo responsable de APIs públicas</strong></li>
-                    <li>Buenas prácticas de seguridad front-end</strong></li>
-                    <li>Diseño de interfaces responsivas</strong></li>
-                    <li>Cumplimiento normativo digital (incluyendo DMCA)</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Tecnologías Utilizadas (Stack Educativo):</strong></p>
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Front-end:</strong> JavaScript vanilla, HTML5, CSS3</li>
-                    <li><strong>API:</strong> Radio Browser (fuente pública de datos)</li>
-                    <li><strong>Almacenamiento:</strong> LocalStorage del navegador</li>
-                    <li><strong>Reproducción:</strong> Web Audio API y HTML5 Audio</li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Funcionalidades Demostradas:</strong></p>
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Reproducción de audio vía Web Audio API</strong></li>
-                    <li><strong>Almacenamiento local con LocalStorage</strong></li>
-                    <li><strong>Filtrado y búsqueda en el cliente</strong></li>
-                    <li><strong>Protección contra XSS y validación de URLs</strong></li>
-                    <li><strong>Diseño responsivo y temas accesibles</strong></li>
-                    <li><strong>Implementación de políticas legales educativas</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Transparencia Técnica:</strong></p>
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Código abierto con fines educativos</strong></li>
-                    <li><strong>Sin servidores propios para streaming</strong></li>
-                    <li><strong>Sin recolección de datos analíticos</strong></li>
-                    <li><strong>Dependencia solo de APIs públicas</strong></li>
-                    <li><strong>Políticas legales con enfoque educativo</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem"><strong>Finalidad del Desarrollo:</strong></p>
-                <p style="font-size: 0.77rem">*Proyecto creado por <strong>Julio Gonzales</strong> como material educativo para demostrar:</p>
-                <ul style="font-size: 0.77rem">
-                    <li><strong>Arquitectura de aplicaciones web estáticas</strong></li>
-                    <li><strong>Buenas prácticas de seguridad en front-end</strong></li>
-                    <li><strong>Consumo ético de APIs públicas</strong></li>
-                    <li><strong>Transparencia en políticas de datos</strong></li>
-                    <li><strong>Cumplimiento normativo digital educativo</strong></li>
-                </ul>
-                
-                <p style="font-size: 0.77rem">*Nota Educativa:</p>
-                <p style="font-size: 0.77rem"><strong>Este proyecto no tiene fines comerciales y sirve solo para demostración técnica y educativa sobre desarrollo web y normativas digitales.</strong></p>
-            </div>
-        </section>
-    `
-};
+            const toastContainer = document.getElementById('toastContainer');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalCancel = document.getElementById('modalCancel');
+            const modalConfirm = document.getElementById('modalConfirm');
 
-    
-    function showDisclaimer(type, title) {
-        disclaimerTitle.textContent = title;
-        disclaimerContent.innerHTML = LEGAL_CONTENT[type] || '<p>Contenido no encontrado.</p>';
-        disclaimerModal.classList.add('show');
-    }
-    
-    function hideDisclaimerModal() {
-        disclaimerModal.classList.remove('show');
-    }
-    
-    // =========================
-    // 3. LÓGICA DE LA  WEB APP
-    // =========================
-    
-    function showToast(message, type = 'info', duration = 4000) {
-        const toastContainer = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'}"></i> <span>${sanitizeHTML(message)}</span>`;
-        toast.className = `toast ${type}`;
-        
-        toastContainer.appendChild(toast);
-        
-        toast.offsetHeight;
-        toast.classList.add('show');
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, duration);
-    }
-    
-    function showPlayer() {
-        const playerContainer = document.getElementById('player-container');
-        playerContainer.style.display = 'block';
-        playerContainer.setAttribute('aria-hidden', 'false');
-        document.body.style.paddingBottom = 'var(--player-height)';
-    }
-    
-    function hidePlayer() {
-        const playerContainer = document.getElementById('player-container');
-        playerContainer.style.display = 'none';
-        playerContainer.setAttribute('aria-hidden', 'true');
-        document.body.style.paddingBottom = '0';
-    }
-    
-    // ====================================
-    // 4. INDICADOR CIRCULAR VERDE MODERNO
-    // ====================================
-    
-    /*** Actualiza el indicador visual de qué radio está sonando actualmente
-     * @param {HTMLElement} cardElement Elemento de la tarjeta que está sonando
-     * @param {boolean} isPlaying Si la música está realmente sonando
-     */
-    function updatePlayingIndicator(cardElement = null, isPlaying = true) {
-        // Elimina el indicador de todas las tarjetas
-        const allCards = document.querySelectorAll('.radio-item');
-        allCards.forEach(card => {
-            card.classList.remove('playing', 'playing-paused');
-            const existingIndicator = card.querySelector('.playing-indicator');
-            if (existingIndicator) {
-                existingIndicator.remove();
-            }
-        });
-        
-        // Si no hay tarjeta sonando, limpia la referencia
-        if (!cardElement) {
-            currentlyPlayingCard = null;
-            return;
-        }
-        
-        // Agrega el indicador a la tarjeta actual con el estado correcto
-        if (isPlaying) {
-            cardElement.classList.add('playing');
-        } else {
-            cardElement.classList.add('playing-paused');
-        }
-        
-        // Crea el indicador circular verde moderno en la parte inferior izquierda
-        const playingIndicator = document.createElement('div');
-        playingIndicator.className = 'playing-indicator';
-        playingIndicator.innerHTML = `
-            <div class="pulse-circle ${!isPlaying ? 'paused' : ''}"></div>
-            <div class="sound-waves ${!isPlaying ? 'paused' : ''}">
-                <div class="wave"></div>
-                <div class="wave"></div>
-                <div class="wave"></div>
-            </div>
-        `;
-        
-        cardElement.appendChild(playingIndicator);
-        currentlyPlayingCard = cardElement;
-        
-        // Agrega efecto de resalte sutil en la tarjeta solo cuando está sonando
-        if (isPlaying) {
-            cardElement.style.borderColor = 'var(--accent-color)';
-            cardElement.style.boxShadow = '0 8px 30px color-mix(in srgb, var(--accent-color) 30%, transparent)';
-        } else {
-            cardElement.style.borderColor = 'color-mix(in srgb, var(--accent-color) 30%, transparent)';
-            cardElement.style.boxShadow = '0 4px 15px color-mix(in srgb, var(--accent-color) 15%, transparent)';
-        }
-    }
-    
-    /* Elimina todos los indicadores de reproducción */
-    function clearAllPlayingIndicators() {
-        const allCards = document.querySelectorAll('.radio-item');
-        allCards.forEach(card => {
-            card.classList.remove('playing', 'playing-paused');
-            card.style.borderColor = '';
-            card.style.boxShadow = '';
-            const existingIndicator = card.querySelector('.playing-indicator');
-            if (existingIndicator) {
-                existingIndicator.remove();
-            }
-        });
-        currentlyPlayingCard = null;
-    }
-    
-    //========
-    // TEMAS
-    //========
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
 
-    const themes = ["dark", "light"];
-    
-    function applyTheme(name) {
-        if (!name || name === "dark") {
-            document.documentElement.removeAttribute('data-theme');
-            themeIcon.className = 'fas fa-moon'; 
-        } else if (name === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            themeIcon.className = 'fas fa-sun'; 
-        }
-        localStorage.setItem('gr_theme', name || 'dark');
-    }
-    
-    const savedTheme = localStorage.getItem('gr_theme') || 'dark';
-    applyTheme(savedTheme);
-    
-    themeToggle.addEventListener('click', () => {
-        const cur = localStorage.getItem('gr_theme') || 'dark';
-        const idx = themes.indexOf(cur);
-        const next = themes[(idx + 1) % themes.length];
-        applyTheme(next);
-        showToast(`Tema cambiado a ${next === 'dark' ? 'Oscuro' : 'Claro'}`, 'info');
-    });
-    
-    // Fetch helper with timeout
-    async function fetchJSON(url, fallback = null) {
-        try {
-            const controller = new AbortController();
-            const id = setTimeout(()=>controller.abort(), 15000);
-            const res = await fetch(url, {signal: controller.signal});
-            clearTimeout(id);
-            if (!res.ok) return fallback;
-            return await res.json();
-        } catch (err) {
-            console.warn("fetch err", err, url);
-            return fallback;
-        }
-    }
-    
-    // Popula selects (countries y tags)
-    async function populateFilters() {
-        const countries = await fetchJSON(API_BASE + '/countries', []);
-        if (countries && countries.length) {
-            const sortedCountries = countries.sort((a, b) => {
-                return a.name.localeCompare(b.name, 'es');
-            }).slice(0, 300);
-            
-            sortedCountries.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = sanitizeHTML(c.name);
-                opt.textContent = `${sanitizeHTML(c.name)} (${c.stationcount})`;
-                countrySelect.appendChild(opt);
-            });
-        }
-    
-        const tags = await fetchJSON(API_BASE + '/tags', []);
-        if (tags && tags.length) {
-            const topTags = tags.sort((a,b)=>b.stationcount - a.stationcount).slice(0,120);
-            topTags.forEach(t=>{
-                const opt=document.createElement('option');
-                opt.value = sanitizeHTML(t.name);
-                opt.textContent = `${sanitizeHTML(t.name)} (${t.stationcount})`;
-                tagSelect.appendChild(opt);
-            });
-        }
-    }
-    
-    // CORRECCIÓN APLICADA: Ahora comienza con 50 estaciones
-    async function fetchTopStations(limit = 50, query = "", country = "", tag = "") {
-        try {
-            let endpoint = '';
-            const params = [];
-    
-            if (query && query.trim().length > 0) {
-                params.push(`name=${encodeURIComponent(query.trim())}`);
-            }
-            if (country) params.push(`country=${encodeURIComponent(country)}`);
-            if (tag) params.push(`tag=${encodeURIComponent(tag)}`);
-            
-            params.push(`limit=${limit}`);
-            params.push('hidebroken=true');
-            params.push('order=votes&reverse=true');
-    
-            if (params.length > 2) {
-                endpoint = `${API_BASE}/stations/search?${params.join('&')}`;
-            } else {
-                endpoint = `${API_BASE}/stations/topclick/${limit}`;
-            }
-            
-            return await fetchJSON(endpoint, []);
-        } catch (err) {
-            console.error("fetchTopStations err", err);
-            return [];
-        }
-    }
-    
-    // Render stations
-    function renderStations(list) {
-        radioListEl.innerHTML = "";
-        if (!list || list.length === 0) {
-            radioListEl.innerHTML = "<div style='color:var(--muted); text-align:center; padding: 40px;'>No se encontraron estaciones. Intenta cambiar los filtros.</div>";
-            return;
-        }
-        list.forEach(st => {
-            const card = document.createElement('div'); 
-            card.className = 'radio-item';
-            
-            // Agrega data attribute para identificación única
-            card.setAttribute('data-station-uuid', st.stationuuid);
-            
-            const safeName = escapeHtml(st.name);
-            const safeCountry = escapeHtml(st.country || '');
-            const safeTags = (st.tags||'').split(',').slice(0,3).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
-            const favicon = escapeHtml(st.favicon || '');
-            
-            const fallbackIconHTML = `<i class="fas fa-compact-disc"></i>`;
-            const cardContent = favicon ? `<img src="${favicon}" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'${getComputedStyle(document.documentElement).getPropertyValue('--icon-fallback-color').trim().replace('#', '%23')}\\' d=\\'M499.1 6.3c8.1 6 12.9 15.6 12.9 25.7v72c0 22.1-17.9 40-40 40H48c-22.1 0-40-17.9-40-40V32c0-10.1 4.8-19.7 12.9-25.7s18.4-8.4 28.1-5.6L256 100 471.1 12.6c9.7-2.8 19.9-.4 28.1 5.6zM504 312V248c0-22.1-17.9-40-40-40H48c-22.1 0-40 17.9-40 40v64c0 22.1 17.9 40 40 40H464c22.1 0 40-17.9 40-40zm-48 104H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H464c17.7 0 32-14.3 32-32s-14.3-32-32-32z\'/></svg>'">` : fallbackIconHTML;
-            
-            card.innerHTML = `
-                <div class="radio-meta">
-                    <div class="radio-cover" style="${favicon?`background-image:url(${favicon})`:'none'};">
-                        ${cardContent}
-                    </div>
-                    <div class="radio-details">
-                        <h3>${safeName}</h3>
-                        <p>${safeCountry} • ${st.codec || ''} • ${st.bitrate || ''}kbps</p>
-                        <div class="station-tags">${safeTags}</div>
-                    </div>
-                    <button class="fav-btn ${favorites.includes(st.stationuuid) ? 'active' : ''}" title="Favorito" aria-label="Favorito">
-                        <i class="fas fa-heart"></i>
-                    </button>
-                </div>
-            `;
-            
-            card.addEventListener('click', (e)=>{
-                if (e.target.closest('.fav-btn')) return;
-                playStation(st, card);
-            });
-            
-            const favBtn = card.querySelector('.fav-btn');
-            favBtn.addEventListener('click', (e)=>{
-                e.stopPropagation();
-                toggleFavorite(st);
-                favBtn.classList.toggle('active');
-                updateFavoritesSection();
-            });
-            
-            radioListEl.appendChild(card);
-        });
-    }
-    
-    // Inicializar visualizador de barras vertical
-    function initVisualizer() {
-        if (visualizerInterval) {
-            clearInterval(visualizerInterval);
-            visualizerInterval = null;
-        }
-    
-        visualizer.innerHTML = '';
-        visualizerBars = [];
-        
-        for (let i = 0; i < 16; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.style.height = '5px';
-            visualizer.appendChild(bar);
-            visualizerBars.push(bar);
-        }
-        
-        visualizerInterval = setInterval(() => {
-            if (audio && !audio.paused && isPlaying && !audio.muted) {
-                visualizerBars.forEach(bar => {
-                    const height = Math.random() * 100;
-                    bar.style.height = `${5 + height * 0.35}px`;
-                    bar.style.opacity = 0.7 + Math.random() * 0.3;
-                });
-            } else {
-                visualizerBars.forEach(bar => {
-                    bar.style.height = '5px';
-                    bar.style.opacity = 0.3;
+            // Meta color del tema
+            const themeColorMeta = document.getElementById('themeColorMeta');
+
+            // Modal de compartir
+            const shareModalOverlay = document.getElementById('shareModalOverlay');
+            const shareModalClose = document.getElementById('shareModalClose');
+            const shareAppBtn = document.getElementById('shareAppBtn');
+            const copyLinkBtn = document.getElementById('copyLinkBtn');
+            const shareBtns = shareModalOverlay.querySelectorAll('.share-modal-btn');
+
+            function syncOpenOverlaysToViewport() {
+                const vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+                const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+                document.querySelectorAll('#disclaimer-overlay, .share-modal-overlay.visible').forEach(el => {
+                    el.style.width = vw + 'px';
+                    el.style.height = vh + 'px';
                 });
             }
-        }, 150);
-    }
-    
-    function stopVisualizer() {
-        if (visualizerInterval) {
-            clearInterval(visualizerInterval);
-            visualizerInterval = null;
-        }
-        visualizerBars.forEach(bar => {
-            bar.style.height = '5px';
-            bar.style.opacity = '0.3';
-        });
-    }
-    
-    // Función playStation mejorada con indicador visual
-    function playStation(st, cardElement = null) {
-        const src = st.url_resolved || st.url || st.url_direct;
-        
-        if (!src) { 
-            showToast('Esta estación no tiene URL de transmisión disponible.', 'error');
-            securityIndicator.className = 'security-check unsafe';
-            securityIndicator.innerHTML = '<i class="fas fa-times-circle"></i> URL Ausente';
-            return; 
-        }
-        
-        currentStation = st;
-        
-        stopVisualizer();
-        
-        // Actualiza el indicador visual antes de intentar reproducir (estado "cargando")
-        updatePlayingIndicator(cardElement, false);
-    
-        const securityStatus = checkAudioURLSecurity(src);
-        
-        if (securityStatus === 'unsafe') {
-            showToast('Radio Bloqueada: Enlace malicioso detectado. Busque otra estación.', 'error', 8000);
-            securityIndicator.className = 'security-check unsafe';
-            securityIndicator.innerHTML = `<i class="fas fa-times-circle"></i> ¡ENLACE PELIGROSO!`;
-            audio.pause();
-            audio.src = '';
-            playerState.textContent = 'Bloqueado';
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            isPlaying = false;
-            clearAllPlayingIndicators();
-            return;
-        }
-    
-        securityIndicator.className = 'security-check';
-        securityIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Verificando URL...';
-    
-        audio.src = src;
-        showPlayer();
-        
-        audio.play().then(() => {
-            playerTitle.textContent = escapeHtml(st.name);
-            playerSub.textContent = `${escapeHtml(st.country || '—')} • ${escapeHtml(st.language || '—')}`;
-            playerState.textContent = 'Reproduciendo';
-            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            isPlaying = true;
-            
-            if (st.favicon) {
-                playerCover.src = st.favicon;
-                playerCover.style.display = 'block';
-                playerCoverFallback.style.display = 'none';
-            } else {
-                playerCover.src = '';
-                playerCover.style.display = 'none';
-                playerCoverFallback.style.display = 'flex';
+            window.addEventListener('resize', syncOpenOverlaysToViewport);
+            window.addEventListener('orientationchange', syncOpenOverlaysToViewport);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncOpenOverlaysToViewport);
             }
-    
-            if (securityStatus === 'safe') {
-                securityIndicator.className = 'security-check safe';
-                securityIndicator.innerHTML = `<i class="fas fa-check-circle"></i> Enlace Seguro`;
-            } else {
-                securityIndicator.className = 'security-check partial';
-                securityIndicator.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Enlace no Verificado (Reproduciendo)`;
-            }
-    
-            showToast(`Reproduciendo: ${st.name}`, 'success');
+
+            // ---------- Estado ----------
+            const API_FALLBACK_SERVERS = [
+                'https://de2.api.radio-browser.info',
+                'https://at1.api.radio-browser.info',
+                'https://nl1.api.radio-browser.info',
+                'https://fr1.api.radio-browser.info'
+            ];
+            let apiBase = null;
+            let stations = [];
+            let favorites = [];
+            let favoriteStations = []; // Almacena los datos completos de las emisoras favoritas
             
-            // ACTUALIZA: Ahora el indicador muestra que está realmente reproduciendo
-            updatePlayingIndicator(cardElement, true);
-            
-            if (visualizerBars.length === 0 || !visualizerInterval) {
-                initVisualizer();
-            }
-            
-        }).catch(err => {
-            console.warn("Play error", err);
-            playerState.textContent = 'Error';
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            isPlaying = false;
-            
-            stopVisualizer();
-            clearAllPlayingIndicators();
-    
-            securityIndicator.className = 'security-check unsafe';
-            securityIndicator.innerHTML = `<i class="fas fa-times-circle"></i> Error en la Transmisión`;
-    
-            let errorMsg = "Error al reproducir (Codec/Red).";
-            if (err.name === "NotAllowedError") {
-                errorMsg = "Permiso denegado (autoplay). Haga clic en reproducir nuevamente.";
-            }
-            
-            showToast(errorMsg, 'error');
-        });
-    }
-    
-    // Play/pause
-    playBtn.addEventListener('click', ()=>{
-        if (!audio.src) { 
-            if (stations.length) {
-                playStation(stations[0]); 
-            } else {
-                showToast('No hay estaciones disponibles para reproducir.', 'warning');
-            }
-            return; 
-        }
-        
-        if (audio.paused) {
-            audio.play().then(() => {
-                playerState.textContent = 'Reproduciendo';
-                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                isPlaying = true;
-                
-                const status = checkAudioURLSecurity(audio.src);
-                if (status === 'safe') {
-                    securityIndicator.className = 'security-check safe';
-                    securityIndicator.innerHTML = `<i class="fas fa-check-circle"></i> Enlace Seguro`;
-                } else if (status === 'partial') {
-                    securityIndicator.className = 'security-check partial';
-                    securityIndicator.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Enlace no Verificado (Reproduciendo)`;
-                }
-                
-                // ACTUALIZA: Reactiva el indicador cuando la música vuelve a sonar
-                if (currentStation && currentlyPlayingCard) {
-                    updatePlayingIndicator(currentlyPlayingCard, true);
-                }
-                
-                if (visualizerBars.length === 0 || !visualizerInterval) {
-                    initVisualizer();
-                }
-                
-            }).catch(err => {
-                console.warn("Play error", err);
-                showToast("Error al reanudar la reproducción.", 'error');
-                stopVisualizer();
-            });
-        } else {
-            audio.pause();
-            playerState.textContent = audio.muted ? 'Silenciado' : 'Pausado';
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            isPlaying = false;
-            stopVisualizer();
-            
-            // ACTUALIZA: Cambia el indicador a estado pausado
-            if (currentlyPlayingCard) {
-                updatePlayingIndicator(currentlyPlayingCard, false);
-            }
-        }
-    });
-    
-    // NUEVO: Función toggleMute actualizada para controlar el indicador
-    function toggleMute() {
-        if (!audio.src) {
-            showToast('No hay estaciones sonando para silenciar.', 'warning');
-            return;
-        }
-        
-        audio.muted = !audio.muted;
-        
-        if (audio.muted) {
-            muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-            muteBtn.title = 'Reactivar sonido';
-            playerState.textContent = 'Silenciado';
-            showToast('Audio silenciado', 'info');
-            
-            // ACTUALIZA: Para el indicador cuando mudo
-            if (currentlyPlayingCard && !audio.paused) {
-                updatePlayingIndicator(currentlyPlayingCard, false);
-            }
-        } else {
-            muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-            muteBtn.title = 'Silenciar';
-            playerState.textContent = audio.paused ? 'Pausado' : 'Reproduciendo';
-            showToast('Audio reactivado', 'info');
-            
-            // ACTUALIZA: Reactiva el indicador cuando quita el mudo (si no está pausado)
-            if (currentlyPlayingCard && !audio.paused) {
-                updatePlayingIndicator(currentlyPlayingCard, true);
-            }
-        }
-    }
-    muteBtn.addEventListener('click', toggleMute);
-    
-    audio.addEventListener('error', (e)=>{ 
-        playerState.textContent='Error'; 
-        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        isPlaying = false;
-        securityIndicator.className = 'security-check unsafe';
-        securityIndicator.innerHTML = `<i class="fas fa-times-circle"></i> Error en la Transmisión`;
-        showToast(`Error de audio: La transmisión falló.`, 'error');
-        stopVisualizer();
-        clearAllPlayingIndicators();
-    });
-    
-    // Favorites
-    function toggleFavorite(st) {
-        const id = st.stationuuid;
-        if (!favorites.includes(id)) {
-            favorites.push(id);
-            showToast('Agregado a favoritos', 'success');
-        } else {
-            favorites = favorites.filter(x => x !== id);
-            showToast('Eliminado de favoritos', 'info');
-        }
-        localStorage.setItem('gr_favs', JSON.stringify(favorites));
-    }
-    
-    function hideConfirmationModal() {
-      confirmationModal.classList.remove('show');
-      pendingDeleteStationId = null;
-    }
-    
-    function showConfirmationModal(stationId) {
-      pendingDeleteStationId = stationId;
-      confirmationModal.classList.add('show');
-      
-      setTimeout(() => {
-        cancelBtn.focus();
-      }, 100);
-    }
-    
-    cancelBtn.addEventListener('click', hideConfirmationModal);
-    
-    deleteBtn.addEventListener('click', () => {
-      if (pendingDeleteStationId) {
-        removeFavorite(pendingDeleteStationId);
-        hideConfirmationModal();
-      }
-    });
-    
-    function removeFavorite(stationId) {
-      favorites = favorites.filter(x => x !== stationId);
-      localStorage.setItem('gr_favs', JSON.stringify(favorites));
-      updateFavoritesSection();
-      showToast('Radio eliminada de favoritos', 'info');
-      updateFavoriteButtonsInMainList();
-    }
-    
-    async function updateFavoritesSection() {
-        favoritesListEl.innerHTML = '';
-        if (favorites.length === 0) {
-            favoritesListEl.innerHTML = '<div style="color:var(--muted); text-align:center; padding: 20px;">Aún no hay estaciones favoritas.</div>';
-            return;
-        }
-        
-        for (const id of favorites) {
-            try {
-                const stationsData = await fetchJSON(`${API_BASE}/stations/byuuid?uuids=${id}`, []);
-                
-                if (!stationsData || stationsData.length === 0) {
-                    continue;
-                }
-                
-                const st = stationsData[0];
-                
-                const btn = document.createElement('div');
-                btn.className = 'radio-item';
-                btn.style.padding = '12px';
-                btn.setAttribute('data-station-uuid', st.stationuuid);
-                
-                const safeName = escapeHtml(st.name);
-                const favicon = escapeHtml(st.favicon || '');
-                
-                const fallbackIconHTML = `<i class="fas fa-compact-disc"></i>`;
-                const cardContent = favicon ? `<img src="${favicon}" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 512 512\\'><path fill=\\'${getComputedStyle(document.documentElement).getPropertyValue('--icon-fallback-color').trim().replace('#', '%23')}\\' d=\\'M499.1 6.3c8.1 6 12.9 15.6 12.9 25.7v72c0 22.1-17.9 40-40 40H48c-22.1 0-40-17.9-40-40V32c0-10.1 4.8-19.7 12.9-25.7s18.4-8.4 28.1-5.6L256 100 471.1 12.6c9.7-2.8 19.9-.4 28.1 5.6zM504 312V248c0-22.1-17.9-40-40-40H48c-22.1 0-40 17.9-40 40v64c0 22.1 17.9 40 40 40H464c22.1 0 40-17.9 40-40zm-48 104H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H464c17.7 0 32-14.3 32-32s-14.3-32-32-32z\'/></svg>'">` : fallbackIconHTML;
-                const style = favicon ? `background-image:url(${favicon})` : 'none';
-                
-                btn.innerHTML = `
-                    <div class="radio-meta">
-                        <div class="radio-cover" style="${style};">
-                            ${cardContent}
-                        </div>
-                        <div class="radio-details">
-                            <h3>${safeName}</h3>
-                            <p>${escapeHtml(st.country || '')} • ${st.codec || ''} • ${st.bitrate || ''}kbps</p>
-                            <div class="station-tags"></div> </div>
-                        <div class="favorite-actions" style="display: flex; gap: 8px; align-items: center;">
-                            <button class="small-btn play-fav" title="Reproducir">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button class="small-btn delete-fav" title="Eliminar de favoritos" style="color: var(--error);">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>`;
-                
-                btn.querySelector('.play-fav').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    playStation(st, btn);
-                });
-                
-                btn.querySelector('.delete-fav').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showConfirmationModal(st.stationuuid);
-                });
-                
-                btn.addEventListener('click', (e) => {
-                    if (e.target.closest('.small-btn')) return;
-                    playStation(st, btn);
-                });
-                
-                favoritesListEl.appendChild(btn);
-            } catch (err) {
-                console.warn('Error al cargar favorito:', err);
-            }
-        }
-    }
-    
-    function updateFavoriteButtonsInMainList() {
-        const favButtons = document.querySelectorAll('.fav-btn');
-        favButtons.forEach(btn => {
-            const stationItem = btn.closest('.radio-item');
-            if (stationItem) {
-                const stationNameElement = stationItem.querySelector('.radio-details h3');
-                if (stationNameElement) {
-                    const stationName = stationNameElement.textContent;
-                    const station = stations.find(s => s.name === stationName);
-                    if (station) {
-                        btn.classList.toggle('active', favorites.includes(station.stationuuid));
+            try { 
+                const stored = localStorage.getItem('gr_favs');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        favorites = parsed;
                     }
                 }
+                // Intenta cargar los datos completos de las favoritas
+                const storedFavData = localStorage.getItem('gr_favs_data');
+                if (storedFavData) {
+                    const parsedData = JSON.parse(storedFavData);
+                    if (Array.isArray(parsedData)) {
+                        favoriteStations = parsedData;
+                    }
+                }
+            } catch { 
+                favorites = [];
+                favoriteStations = [];
             }
-        });
-    }
-    
-    // Comienza con 50 estaciones y fallback explícito
-    async function loadStations() {
-        const q = searchInput.value.trim();
-        const limit = parseInt(limitSelect.value, 10) || 50; // Fallback explícito para 50
-        const country = countrySelect.value || '';
-        const tag = tagSelect.value || '';
-        
-        radioListEl.innerHTML = '<div style="color:var(--muted); text-align:center; padding: 40px;"><div class="loading"></div> Cargando estaciones…</div>';
-        
-        try {
-            const list = await fetchTopStations(limit, q, country, tag);
-            stations = list || [];
-            renderStations(stations);
             
-            if (stations.length > 0) {
-                showToast(`${stations.length} estaciones cargadas`, 'success');
-            } else {
-                showToast('No se encontraron estaciones con los filtros actuales', 'warning');
+            let currentStation = null;
+            let currentCardEl = null;
+            let isPlaying = false;
+            let isMuted = false;
+            let pendingDeleteId = null;
+            let visualizerInterval = null;
+            let visualizerBars = [];
+            let currentLimit = parseInt(limitSelect.value, 10) || 96;
+            let searchDebounce = null;
+            let loadToken = 0;
+            let isLoading = false;
+            let hasMore = true;
+
+            // ---------- Funciones de color del tema ----------
+            function updateThemeColor(color, smooth = true) {
+                if (!themeColorMeta) return;
+                if (smooth) {
+                    themeColorMeta.style.transition = 'all 0.5s ease';
+                }
+                themeColorMeta.content = color;
+                try {
+                    if (window.navigator && window.navigator.themeColor) {
+                        window.navigator.themeColor = color;
+                    }
+                } catch (e) {}
             }
-        } catch (error) {
-            showToast('Error al cargar estaciones. Verifique su conexión.', 'error');
+
+            function getCurrentThemeColor() {
+                const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+                return isLight ? '#e9e1d2' : '#14100d';
+            }
+
+            function getGenreColor(station) {
+                const tags = (station.tags || '').toLowerCase();
+                const genreColors = {
+                    'rock': '#e74c3c',
+                    'pop': '#e67e22',
+                    'jazz': '#f39c12',
+                    'classical': '#8e44ad',
+                    'electronic': '#3498db',
+                    'hip hop': '#2ecc71',
+                    'rap': '#2ecc71',
+                    'reggae': '#1abc9c',
+                    'blues': '#2980b9',
+                    'country': '#d35400',
+                    'folk': '#16a085',
+                    'metal': '#7f8c8d',
+                    'punk': '#c0392b',
+                    'indie': '#27ae60',
+                    'alternative': '#2c3e50',
+                    'dance': '#f1c40f',
+                    'house': '#9b59b6',
+                    'techno': '#34495e',
+                    'trance': '#8e44ad',
+                    'ambient': '#2c3e50',
+                    'news': '#e74c3c',
+                    'talk': '#e67e22',
+                    'sports': '#3498db',
+                    'comedy': '#f1c40f'
+                };
+                for (const [genre, color] of Object.entries(genreColors)) {
+                    if (tags.includes(genre)) {
+                        return color;
+                    }
+                }
+                return null;
+            }
+
+            function updateThemeColorByGenre(station) {
+                if (station) {
+                    const genreColor = getGenreColor(station);
+                    if (genreColor) {
+                        updateThemeColor(genreColor, true);
+                        return;
+                    }
+                }
+                updateThemeColor(getCurrentThemeColor(), true);
+            }
+
+            // ---------- Funciones auxiliares ----------
+            function sanitize(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
+                    "'": '&#39;' })[c]); }
+
+            // Valida que una URL proveniente de la API externa use un esquema seguro (http/https).
+            // Bloquea esquemas peligrosos como javascript:, data:, vbscript:, file:, etc. que podrían
+            // usarse para ejecutar código o abrir contenido malicioso si se insertaran en el DOM.
+            function safeUrl(u) {
+                if (!u) return '';
+                try {
+                    const parsed = new URL(String(u), window.location.href);
+                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                        return parsed.href;
+                    }
+                } catch { /* URL inválida */ }
+                return '';
+            }
+
+            function showToast(msg, type = 'info') {
+                toastContainer.querySelectorAll('.toast').forEach(t => t.remove());
+                const el = document.createElement('div');
+                el.className = `toast ${type}`;
+                el.innerHTML =
+                    `<i class="fas ${type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':type==='warning'?'fa-exclamation-triangle':'fa-info-circle'}"></i> ${sanitize(msg)}`;
+                toastContainer.appendChild(el);
+                requestAnimationFrame(() => el.classList.add('show'));
+                setTimeout(() => {
+                    el.classList.remove('show');
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            }
+
+            function setOnlineStatus() {
+                const online = navigator.onLine;
+                connStatus.classList.toggle('offline', !online);
+                connLabel.textContent = online ? 'En línea' : 'Sin conexión';
+            }
+            window.addEventListener('online', () => { setOnlineStatus();
+                showToast('Conexión restablecida', 'success'); });
+            window.addEventListener('offline', () => { setOnlineStatus();
+                showToast('Sin conexión a internet', 'warning'); });
+            setOnlineStatus();
+
+            function updateFavBadge() {
+                if (favorites.length > 0) {
+                    favBadge.style.display = 'flex';
+                    favBadge.textContent = favorites.length > 99 ? '99+' : favorites.length;
+                } else {
+                    favBadge.style.display = 'none';
+                }
+            }
+
+            // ---------- Tema ----------
+            function applyTheme(theme) {
+                if (theme === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    themeIcon.className = 'fas fa-sun';
+                    themeToggle.setAttribute('aria-pressed', 'true');
+                    // El color de la barra de búsqueda en modo claro — tono claro y sofisticado
+                    updateThemeColor('#e9e1d2');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    themeIcon.className = 'fas fa-moon';
+                    themeToggle.setAttribute('aria-pressed', 'false');
+                    updateThemeColor('#14100d');
+                }
+                try { localStorage.setItem('gr_theme', theme || 'dark'); } catch {}
+            }
+
+            const initialTheme = (() => {
+                try {
+                    const stored = localStorage.getItem('gr_theme');
+                    if (stored) return stored;
+                    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+                } catch { return 'dark'; }
+            })();
+            applyTheme(initialTheme);
+
+            themeToggle.addEventListener('click', () => {
+                const cur = document.documentElement.getAttribute('data-theme') ? 'light' : 'dark';
+                applyTheme(cur === 'dark' ? 'light' : 'dark');
+            });
+
+            // ---------- Navegación ----------
+            function switchSection(target) {
+                navItems.forEach(n => { n.classList.toggle('active', n.dataset.section === target);
+                    n.setAttribute('aria-selected', n.dataset.section === target ? 'true' : 'false'); });
+                document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === target));
+                if (target === 'sectionFavorites') renderFavorites();
+            }
+            navItems.forEach(item => {
+                item.addEventListener('click', function() { switchSection(this.dataset.section); });
+            });
+
+            // ---------- Funciones de fetch ----------
+            async function pingServer(base) {
+                try {
+                    const ctrl = new AbortController();
+                    const timer = setTimeout(() => ctrl.abort(), 5000);
+                    const res = await fetch(base + '/json/stats', { signal: ctrl.signal });
+                    clearTimeout(timer);
+                    return res.ok;
+                } catch { return false; }
+            }
+
+            async function resolveApiBase() {
+                if (apiBase) return apiBase;
+                try {
+                    const ctrl = new AbortController();
+                    const timer = setTimeout(() => ctrl.abort(), 6000);
+                    const res = await fetch('https://all.api.radio-browser.info/json/servers', { signal: ctrl.signal });
+                    clearTimeout(timer);
+                    if (res.ok) {
+                        const list = await res.json();
+                        const names = [...new Set((list || []).map(s => s.name))];
+                        for (const name of names) {
+                            const candidate = 'https://' + name;
+                            if (await pingServer(candidate)) { apiBase = candidate; return apiBase; }
+                        }
+                    }
+                } catch { /* continúa */ }
+                for (const candidate of API_FALLBACK_SERVERS) {
+                    if (await pingServer(candidate)) { apiBase = candidate; return apiBase; }
+                }
+                apiBase = API_FALLBACK_SERVERS[0];
+                return apiBase;
+            }
+
+            async function fetchJSON(path, fallback = null) {
+                const tryOnce = async (base) => {
+                    try {
+                        const ctrl = new AbortController();
+                        const timer = setTimeout(() => ctrl.abort(), 12000);
+                        const res = await fetch(base + path, { signal: ctrl.signal });
+                        clearTimeout(timer);
+                        if (!res.ok) return undefined;
+                        return await res.json();
+                    } catch { return undefined; }
+                };
+
+                const base = await resolveApiBase();
+                let result = await tryOnce(base);
+                if (result !== undefined) return result;
+
+                apiBase = null;
+                for (const candidate of API_FALLBACK_SERVERS) {
+                    if (candidate === base) continue;
+                    result = await tryOnce(candidate);
+                    if (result !== undefined) { apiBase = candidate; return result; }
+                }
+                return fallback;
+            }
+
+            async function populateFilters() {
+                const countries = await fetchJSON('/json/countries', []);
+                if (countries.length) {
+                    countries.sort((a, b) => a.name.localeCompare(b.name));
+                    const frag = document.createDocumentFragment();
+                    countries.slice(0, 200).forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.name;
+                        opt.textContent = c.name + ' (' + c.stationcount + ')';
+                        frag.appendChild(opt);
+                    });
+                    countrySelect.appendChild(frag);
+                } else {
+                    showToast('No se pudo cargar la lista de países', 'warning');
+                }
+            }
+
+            async function fetchStations(limit, query = '', country = '') {
+                const params = [];
+                if (query) params.push('name=' + encodeURIComponent(query));
+                if (country) params.push('country=' + encodeURIComponent(country));
+                params.push('limit=' + limit);
+                params.push('hidebroken=true');
+                params.push('order=votes&reverse=true');
+                let path;
+                if (params.length > 3) path = '/json/stations/search?' + params.join('&');
+                else path = '/json/stations/topclick/' + limit;
+                return await fetchJSON(path, null);
+            }
+
+            // ---------- Esqueletos ----------
+            function renderSkeletons(count) {
+                stationGrid.innerHTML = '';
+                const frag = document.createDocumentFragment();
+                for (let i = 0; i < count; i++) {
+                    const sk = document.createElement('div');
+                    sk.className = 'skeleton-card';
+                    sk.innerHTML =
+                        `<div class="skeleton-block skeleton-cover"></div><div class="skeleton-lines"><div class="skeleton-block skeleton-line w60"></div><div class="skeleton-block skeleton-line w40"></div><div class="skeleton-block skeleton-line w80"></div></div>`;
+                    frag.appendChild(sk);
+                }
+                stationGrid.appendChild(frag);
+            }
+
+            // ---------- Renderizar emisoras ----------
+            function renderStations(list, append = false) {
+                if (!append) {
+                    stationGrid.innerHTML = '';
+                }
+                
+                if (!list || !list.length) {
+                    if (!append) {
+                        stationGrid.innerHTML =
+                            `<div class="state-message"><i class="fas fa-satellite-dish big-icon"></i><h4>No se encontraron emisoras</h4><p>Prueba con otro nombre o país.</p></div>`;
+                    }
+                    return;
+                }
+                
+                const frag = document.createDocumentFragment();
+                list.forEach(st => {
+                    const card = document.createElement('div');
+                    card.className = 'station-card ripple';
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('tabindex', '0');
+                    card.setAttribute('aria-label', 'Reproducir ' + (st.name || 'emisora'));
+                    const isFav = favorites.includes(st.stationuuid);
+                    const faviconUrl = safeUrl(st.favicon);
+                    const coverHtml = faviconUrl ?
+                        `<img src="${sanitize(faviconUrl)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-compact-disc\\'></i>';">` :
+                        '<i class="fas fa-compact-disc"></i>';
+                    const tags = (st.tags || '').split(',').filter(Boolean).slice(0, 3).map(t =>
+                        `<span>${sanitize(t)}</span>`).join('');
+                    const bitrateTxt = st.bitrate ? (st.bitrate + 'kbps') : '';
+                    
+                    const favIcon = '<i class="fas fa-heart"></i>';
+                    const favLabel = isFav ? 'Quitar de favoritos' : 'Agregar a favoritos';
+                    
+                    card.innerHTML = `
+                        <div class="top">
+                            <div class="cover">${coverHtml}</div>
+                            <div class="info">
+                                <h3>${sanitize(st.name)}</h3>
+                                <div class="meta"><span class="live-dot"></span>${sanitize(st.country||'')}${st.codec?' • '+sanitize(st.codec):''}${bitrateTxt?' '+bitrateTxt:''}</div>
+                                <div class="tags">${tags}</div>
+                            </div>
+                            <button class="fav-btn ${isFav?'active':''}" data-uuid="${st.stationuuid}" aria-label="${favLabel}" aria-pressed="${isFav}">${favIcon}</button>
+                        </div>
+                    `;
+                    const activate = (e) => {
+                        if (e.target.closest('.fav-btn')) return;
+                        playStation(st, card);
+                    };
+                    card.addEventListener('click', activate);
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault();
+                            activate(e); }
+                    });
+                    const favBtn = card.querySelector('.fav-btn');
+                    favBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const uuid = favBtn.dataset.uuid;
+                        const station = stations.find(s => s.stationuuid === uuid);
+                        if (!station) return;
+                        
+                        toggleFavorite(station);
+                        const nowFav = favorites.includes(uuid);
+                        favBtn.classList.toggle('active', nowFav);
+                        favBtn.setAttribute('aria-label', nowFav ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                        favBtn.setAttribute('aria-pressed', nowFav);
+                    });
+                    if (currentStation && currentStation.stationuuid === st.stationuuid) {
+                        card.classList.add('playing');
+                    }
+                    frag.appendChild(card);
+                });
+                stationGrid.appendChild(frag);
+            }
+
+            // ---------- Renderizar favoritos ----------
+            function renderFavorites() {
+                updateFavBadge();
+                
+                // Usa los datos completos de las favoritas almacenados
+                if (favoriteStations.length === 0) {
+                    // Si no hay datos completos, intenta recuperarlos de las estaciones actuales
+                    const favStations = stations.filter(s => favorites.includes(s.stationuuid));
+                    if (favStations.length > 0) {
+                        favoriteStations = favStations;
+                        try {
+                            localStorage.setItem('gr_favs_data', JSON.stringify(favoriteStations));
+                        } catch {}
+                    }
+                }
+                
+                // Usa favoriteStations como fuente principal
+                const favStations = favoriteStations.filter(s => favorites.includes(s.stationuuid));
+                
+                if (!favorites.length || favStations.length === 0) {
+                    favoritesGrid.innerHTML = 
+                        `<div class="state-message"><i class="fas fa-heart big-icon"></i><h4>Aún no hay favoritas</h4><p>Toca el corazón de cualquier emisora para guardarla aquí.</p></div>`;
+                    return;
+                }
+                
+                favoritesGrid.innerHTML = '';
+                const frag = document.createDocumentFragment();
+                favStations.forEach(st => {
+                    const card = document.createElement('div');
+                    card.className = 'station-card ripple';
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('tabindex', '0');
+                    card.setAttribute('aria-label', 'Reproducir ' + (st.name || 'emisora'));
+                    
+                    const coverHtml = safeUrl(st.favicon) ?
+                        `<img src="${sanitize(safeUrl(st.favicon))}" alt="" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-compact-disc\\'></i>';">` :
+                        '<i class="fas fa-compact-disc"></i>';
+                    const tags = (st.tags || '').split(',').filter(Boolean).slice(0, 3).map(t =>
+                        `<span>${sanitize(t)}</span>`).join('');
+                    const bitrateTxt = st.bitrate ? (st.bitrate + 'kbps') : '';
+                    
+                    card.innerHTML = `
+                        <div class="top">
+                            <div class="cover">${coverHtml}</div>
+                            <div class="info">
+                                <h3>${sanitize(st.name)}</h3>
+                                <div class="meta"><span class="live-dot"></span>${sanitize(st.country||'')}${st.codec?' • '+sanitize(st.codec):''}${bitrateTxt?' '+bitrateTxt:''}</div>
+                                <div class="tags">${tags}</div>
+                            </div>
+                            <button class="fav-btn active" data-uuid="${st.stationuuid}" aria-label="Remover dos favoritos" aria-pressed="true"><i class="fas fa-trash-can"></i></button>
+                        </div>
+                    `;
+                    const activate = (e) => {
+                        if (e.target.closest('.fav-btn')) return;
+                        playStation(st, card);
+                    };
+                    card.addEventListener('click', activate);
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault();
+                            activate(e); }
+                    });
+                    const favBtn = card.querySelector('.fav-btn');
+                    favBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const uuid = favBtn.dataset.uuid;
+                        pendingDeleteId = uuid;
+                        modalOverlay.classList.add('visible');
+                        modalConfirm.focus();
+                    });
+                    if (currentStation && currentStation.stationuuid === st.stationuuid) {
+                        card.classList.add('playing');
+                    }
+                    frag.appendChild(card);
+                });
+                favoritesGrid.appendChild(frag);
+            }
+
+            // ---------- Gestión de favoritos ----------
+            function toggleFavorite(station) {
+                const index = favorites.indexOf(station.stationuuid);
+                if (index > -1) {
+                    favorites.splice(index, 1);
+                    // Elimina también de los datos completos
+                    const dataIndex = favoriteStations.findIndex(s => s.stationuuid === station.stationuuid);
+                    if (dataIndex > -1) {
+                        favoriteStations.splice(dataIndex, 1);
+                    }
+                    showToast('Quitada de favoritos', 'warning');
+                } else {
+                    favorites.push(station.stationuuid);
+                    // Almacena los datos completos de la estación
+                    if (!favoriteStations.find(s => s.stationuuid === station.stationuuid)) {
+                        favoriteStations.push(station);
+                    }
+                    showToast('Agregada a favoritos', 'success');
+                }
+                try { 
+                    localStorage.setItem('gr_favs', JSON.stringify(favorites));
+                    localStorage.setItem('gr_favs_data', JSON.stringify(favoriteStations));
+                } catch {}
+                updateFavBadge();
+                if (sectionFav.classList.contains('active')) renderFavorites();
+            }
+
+            // ---------- Cargar emisoras (FUNCIÓN PRINCIPAL) ----------
+            async function loadStations(append = false) {
+                if (isLoading) return;
+                isLoading = true;
+                refreshBtn.disabled = true;
+                loadMoreBtn.disabled = true;
+                
+                const token = ++loadToken;
+                const query = searchInput.value.trim();
+                const country = countrySelect.value;
+                const limit = parseInt(limitSelect.value, 10) || 96;
+                
+                if (!append) {
+                    renderSkeletons(8);
+                }
+                
+                try {
+                    const data = await fetchStations(limit, query, country);
+                    
+                    if (token !== loadToken) return;
+                    
+                    if (data && data.length) {
+                        if (append) {
+                            stations = [...stations, ...data];
+                            renderStations(data, true);
+                        } else {
+                            stations = data;
+                            renderStations(data);
+                        }
+                        hasMore = data.length === limit;
+                        loadMoreBtn.style.display = hasMore ? 'inline-flex' : 'none';
+                        resultsBar.textContent = `${stations.length} emisoras encontradas`;
+                    } else {
+                        if (!append) {
+                            stationGrid.innerHTML =
+                                `<div class="state-message"><i class="fas fa-satellite-dish big-icon"></i><h4>No se encontraron emisoras</h4><p>Prueba con otro nombre o país.</p></div>`;
+                        }
+                        hasMore = false;
+                        loadMoreBtn.style.display = 'none';
+                        resultsBar.textContent = '0 emisoras encontradas';
+                    }
+                } catch (error) {
+                    console.error('Error loading stations:', error);
+                    if (!append) {
+                        stationGrid.innerHTML =
+                            `<div class="state-message"><i class="fas fa-wifi big-icon"></i><h4>Error de conexión</h4><p>No se pudieron cargar las emisoras. Intenta nuevamente.</p><button class="retry-btn" id="retryBtn">Reintentar</button></div>`;
+                        document.getElementById('retryBtn')?.addEventListener('click', () => loadStations(false));
+                    }
+                    showToast('Error al cargar las emisoras', 'error');
+                } finally {
+                    isLoading = false;
+                    refreshBtn.disabled = false;
+                    loadMoreBtn.disabled = false;
+                }
+            }
+
+            // ---------- Funciones del reproductor ----------
+            function playStation(station, cardEl) {
+                const streamUrl = safeUrl(station && station.url);
+                if (!station || !streamUrl) {
+                    showToast('Esta emisora no tiene una URL válida o segura disponible', 'error');
+                    return;
+                }
+                
+                if (visualizerInterval) {
+                    clearInterval(visualizerInterval);
+                    visualizerInterval = null;
+                }
+                
+                currentStation = station;
+                currentCardEl = cardEl;
+                
+                document.querySelectorAll('.station-card').forEach(c => c.classList.remove('playing'));
+                if (cardEl) cardEl.classList.add('playing');
+                
+                const playerFaviconUrl = safeUrl(station.favicon);
+                playerCover.innerHTML = playerFaviconUrl ?
+                    `<img src="${sanitize(playerFaviconUrl)}" alt="" onerror="this.style.display='none';this.parentElement.innerHTML='<i class=\\'fas fa-compact-disc\\'></i>';">` :
+                    '<i class="fas fa-compact-disc"></i>';
+                playerTitle.textContent = station.name || 'Emisora';
+                playerSub.textContent = `${station.country || ''} ${station.codec || ''} ${station.bitrate ? station.bitrate + 'kbps' : ''}`.trim() || '—';
+                
+                const hasHttps = streamUrl.startsWith('https');
+                const hasSsl = station.ssl_error === 0;
+                if (hasHttps && hasSsl) {
+                    securityIndicator.className = 'security safe';
+                    securityIndicator.innerHTML = '<i class="fas fa-shield-alt"></i> Conexión segura';
+                } else if (hasHttps && !hasSsl) {
+                    securityIndicator.className = 'security partial';
+                    securityIndicator.innerHTML = '<i class="fas fa-shield-alt"></i> SSL mixto';
+                } else {
+                    securityIndicator.className = 'security unsafe';
+                    securityIndicator.innerHTML = '<i class="fas fa-shield-alt"></i> Conexión no segura';
+                }
+                
+                audio.src = streamUrl;
+                audio.muted = isMuted;
+                
+                audio.play().then(() => {
+                    isPlaying = true;
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    player.classList.add('visible');
+                    startVisualizer();
+                    updateThemeColorByGenre(station);
+                    showToast(`Reproduciendo: ${station.name}`, 'success');
+                }).catch(err => {
+                    console.error('Play error:', err);
+                    showToast('No se pudo reproducir esta emisora', 'error');
+                    isPlaying = false;
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                });
+            }
+
+            function stopPlayer() {
+                audio.pause();
+                audio.src = '';
+                isPlaying = false;
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                if (visualizerInterval) {
+                    clearInterval(visualizerInterval);
+                    visualizerInterval = null;
+                }
+                player.classList.remove('visible');
+                document.querySelectorAll('.station-card').forEach(c => c.classList.remove('playing'));
+                updateThemeColor(getCurrentThemeColor(), true);
+            }
+
+            function togglePlay() {
+                if (!currentStation) {
+                    showToast('Selecciona una emisora primero', 'warning');
+                    return;
+                }
+                if (isPlaying) {
+                    audio.pause();
+                    isPlaying = false;
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    if (visualizerInterval) {
+                        clearInterval(visualizerInterval);
+                        visualizerInterval = null;
+                    }
+                } else {
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        startVisualizer();
+                    }).catch(err => {
+                        console.error('Play error:', err);
+                        showToast('No se pudo reanudar la reproducción', 'error');
+                    });
+                }
+            }
+
+            // ---------- Visualizador ----------
+            function startVisualizer() {
+                if (visualizerInterval) clearInterval(visualizerInterval);
+                visualizer.innerHTML = '';
+                const barsCount = Math.min(16, Math.floor(visualizer.clientWidth / 4) || 8);
+                visualizerBars = [];
+                for (let i = 0; i < barsCount; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    bar.style.height = Math.random() * 14 + 4 + 'px';
+                    visualizer.appendChild(bar);
+                    visualizerBars.push(bar);
+                }
+                // Actualiza las barras con menos frecuencia para reducir el consumo de CPU/GPU,
+                // y se detiene cuando la pestaña está oculta (no aporta nada visible)
+                visualizerInterval = setInterval(() => {
+                    if (!isPlaying || document.hidden) return;
+                    visualizerBars.forEach(bar => {
+                        const h = Math.random() * 18 + 4;
+                        bar.style.height = h + 'px';
+                    });
+                }, 200);
+            }
+
+            // ---------- Eventos ----------
+            playBtn.addEventListener('click', togglePlay);
+            
+            muteBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                audio.muted = isMuted;
+                muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-off"></i>' : '<i class="fas fa-volume-up"></i>';
+                muteBtn.setAttribute('aria-pressed', isMuted);
+                showToast(isMuted ? 'Silenciado' : 'Sonido activado', 'info');
+            });
+            
+            closePlayerBtn.addEventListener('click', stopPlayer);
+            
+            // ---------- Botón volver arriba ----------
+            let scrollTopTicking = false;
+            function updateScrollTopBtn() {
+                scrollTopBtn.classList.toggle('show', window.scrollY > 400);
+                scrollTopTicking = false;
+            }
+            window.addEventListener('scroll', () => {
+                if (!scrollTopTicking) {
+                    requestAnimationFrame(updateScrollTopBtn);
+                    scrollTopTicking = true;
+                }
+            }, { passive: true });
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(() => loadStations(false), 500);
+                searchClear.classList.toggle('show', searchInput.value.length > 0);
+            });
+            
+            searchClear.addEventListener('click', () => {
+                searchInput.value = '';
+                searchClear.classList.remove('show');
+                loadStations(false);
+                searchInput.focus();
+            });
+            
+            countrySelect.addEventListener('change', () => loadStations(false));
+            limitSelect.addEventListener('change', () => {
+                currentLimit = parseInt(limitSelect.value, 10) || 96;
+                loadStations(false);
+            });
+            
+            refreshBtn.addEventListener('click', () => {
+                const icon = refreshBtn.querySelector('i');
+                icon.classList.add('fa-spin');
+                loadStations(false).finally(() => {
+                    icon.classList.remove('fa-spin');
+                });
+            });
+            
+            loadMoreBtn.addEventListener('click', () => {
+                if (hasMore && !isLoading) {
+                    loadStations(true);
+                }
+            });
+
+            // ---------- Modal de confirmación ----------
+            modalCancel.addEventListener('click', () => {
+                modalOverlay.classList.remove('visible');
+                pendingDeleteId = null;
+            });
+            
+            modalConfirm.addEventListener('click', () => {
+                if (pendingDeleteId) {
+                    const station = stations.find(s => s.stationuuid === pendingDeleteId);
+                    if (station) {
+                        toggleFavorite(station);
+                        document.querySelectorAll(`.fav-btn[data-uuid="${pendingDeleteId}"]`).forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.innerHTML = '<i class="fas fa-heart"></i>';
+                            btn.setAttribute('aria-label', 'Adicionar aos favoritos');
+                            btn.setAttribute('aria-pressed', 'false');
+                        });
+                    } else {
+                        // Si no se encuentra en la lista de estaciones, intenta en los favoritos
+                        const favStation = favoriteStations.find(s => s.stationuuid === pendingDeleteId);
+                        if (favStation) {
+                            toggleFavorite(favStation);
+                        } else {
+                            // Elimina solo de la lista de UUIDs
+                            const index = favorites.indexOf(pendingDeleteId);
+                            if (index > -1) {
+                                favorites.splice(index, 1);
+                                try { localStorage.setItem('gr_favs', JSON.stringify(favorites)); } catch {}
+                                updateFavBadge();
+                                if (sectionFav.classList.contains('active')) renderFavorites();
+                                showToast('Quitada de favoritos', 'warning');
+                            }
+                        }
+                        document.querySelectorAll(`.fav-btn[data-uuid="${pendingDeleteId}"]`).forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.innerHTML = '<i class="fas fa-heart"></i>';
+                            btn.setAttribute('aria-label', 'Agregar a favoritos');
+                            btn.setAttribute('aria-pressed', 'false');
+                        });
+                    }
+                    pendingDeleteId = null;
+                }
+                modalOverlay.classList.remove('visible');
+            });
+            
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    modalOverlay.classList.remove('visible');
+                    pendingDeleteId = null;
+                }
+            });
+
+            // ---------- Modal de compartir ----------
+            shareAppBtn.addEventListener('click', () => {
+                shareModalOverlay.classList.add('visible');
+                syncOpenOverlaysToViewport();
+            });
+            
+            shareModalClose.addEventListener('click', () => {
+                shareModalOverlay.classList.remove('visible');
+            });
+            
+            shareModalOverlay.addEventListener('click', (e) => {
+                if (e.target === shareModalOverlay) {
+                    shareModalOverlay.classList.remove('visible');
+                }
+            });
+            
+            shareBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const network = btn.dataset.network;
+                    const url = encodeURIComponent(window.location.href);
+                    const text = encodeURIComponent('🎵 ¡Escucha GJ Radio Online! Miles de emisoras del mundo en un solo lugar.');
+                    let shareUrl = '';
+                    switch(network) {
+                        case 'whatsapp': shareUrl = `https://wa.me/?text=${text}%20${url}`; break;
+                        case 'telegram': shareUrl = `https://t.me/share/url?url=${url}&text=${text}`; break;
+                        case 'x': shareUrl = `https://x.com/intent/tweet?text=${text}&url=${url}`; break;
+                        case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`; break;
+                    }
+                    if (shareUrl) {
+                        // 'noopener' evita que la ventana abierta tenga acceso a window.opener
+                        // (protección contra reverse tabnabbing)
+                        window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
+                    }
+                });
+            });
+            
+            copyLinkBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    showToast('Enlace copiado al portapapeles', 'success');
+                    shareModalOverlay.classList.remove('visible');
+                } catch {
+                    const input = document.createElement('input');
+                    input.value = window.location.href;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    input.remove();
+                    showToast('Enlace copiado al portapapeles', 'success');
+                    shareModalOverlay.classList.remove('visible');
+                }
+            });
+
+            // ---------- Atajos de teclado ----------
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && !e.target.matches('input, select, textarea, button')) {
+                    e.preventDefault();
+                    togglePlay();
+                }
+                if (e.key === 'Escape') {
+                    if (modalOverlay.classList.contains('visible')) {
+                        modalOverlay.classList.remove('visible');
+                        pendingDeleteId = null;
+                    }
+                    if (shareModalOverlay.classList.contains('visible')) {
+                        shareModalOverlay.classList.remove('visible');
+                    }
+                }
+            });
+
+            // ---------- Manejadores de eventos de audio ----------
+            audio.addEventListener('ended', () => {
+                isPlaying = false;
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                if (visualizerInterval) {
+                    clearInterval(visualizerInterval);
+                    visualizerInterval = null;
+                }
+                showToast('La transmisión ha terminado', 'info');
+            });
+            
+            audio.addEventListener('error', (e) => {
+                console.error('Audio error:', e);
+                if (isPlaying) {
+                    isPlaying = false;
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    if (visualizerInterval) {
+                        clearInterval(visualizerInterval);
+                        visualizerInterval = null;
+                    }
+                    showToast('Error en la transmisión', 'error');
+                }
+            });
+
+            // ---------- Cambio de visibilidad para el color del tema ----------
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && isPlaying && currentStation) {
+                    const genreColor = getGenreColor(currentStation);
+                    if (genreColor) {
+                        updateThemeColor(genreColor, true);
+                    }
+                } else if (document.hidden) {
+                    const baseColor = getCurrentThemeColor();
+                    updateThemeColor(baseColor, true);
+                }
+            });
+
+// ---------- Enlaces del aviso legal ----------
+window.showDisclaimer = function(type, title) {
+    const messages = {
+        privacy: {
+            title: 'Política de Privacidad',
+            content: 'Este proyecto tiene carácter educativo. No recopilamos, almacenamos ni compartimos datos personales de los usuarios. Todas las transmisiones se realizan directamente desde las fuentes externas.'
+        },
+        terms: {
+            title: 'Términos de Uso',
+            content: 'Este proyecto tiene fines educativos y no debe utilizarse con propósitos comerciales. El contenido se proporciona "tal cual", sin garantías de ningún tipo.'
+        },
+        dmca: {
+            title: 'Derechos de Autor',
+            content: 'Este es un proyecto educativo que respeta los derechos de autor. Si usted es titular de derechos y cree que su contenido ha sido utilizado de manera inapropiada, contáctenos para su eliminación.'
+        },
+        about: {
+            title: 'Acerca de',
+            content: 'GJ Radio Online es un agregador de radios en línea desarrollado por Julio Gonzales con fines educativos. El proyecto utiliza la API de Radio Browser y es de código abierto.'
         }
+    };
+    
+    const data = messages[type];
+    if (!data) {
+        showToast('Información disponible próximamente.', 'info');
+        return;
     }
     
-    // Init
-    async function init() {
-        hidePlayer();
-        
-        btnRefresh.addEventListener('click', loadStations);
-        
-        // Implementación de búsqueda en tiempo real con debounce
-        let searchTimeout;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                loadStations();
-            }, 500);
-        });
-        
-        countrySelect.addEventListener('change', loadStations);
-        tagSelect.addEventListener('change', loadStations);
-        limitSelect.addEventListener('change', loadStations);
-        
-        initVisualizer(); 
-        stopVisualizer();
+    const iconMap = {
+        privacy: 'fa-shield-alt',
+        terms: 'fa-file-contract',
+        dmca: 'fa-copyright',
+        about: 'fa-info-circle'
+    };
     
-        securityIndicator.className = 'security-check';
-        securityIndicator.innerHTML = '<i class="fas fa-shield-alt"></i> Verificación Pendiente...';
+    // Superposición
+    const overlay = document.createElement('div');
+    overlay.id = 'disclaimer-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100dvh;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+        animation: disclaimerFadeIn 0.3s ease;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    `;
     
-        await populateFilters();
-        await updateFavoritesSection();
-        await loadStations();
+    // Modal con ajustes para evitar fondo extra
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: var(--bg-surface-glass);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-xl);
+        max-width: 520px;
+        width: 100%;
+        padding: 32px 28px 28px;
+        box-shadow: var(--shadow-glass);
+        animation: disclaimerSlideUp 0.35s cubic-bezier(0.2, 0, 0, 1);
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box;
+        /* Asegura que la altura se ajuste al contenido */
+        height: auto;
+        min-height: unset;
+        /* Para que el scroll no genere espacio extra */
+        scrollbar-width: thin;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    `;
+    
+    modal.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px;">
+            <div style="
+                width: 44px;
+                height: 44px;
+                min-width: 44px;
+                border-radius: var(--radius-sm);
+                background: var(--accent-soft);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                color: var(--accent);
+                border: 1px solid var(--border-glass);
+            ">
+                <i class="fas ${iconMap[type] || 'fa-info-circle'}"></i>
+            </div>
+            <div style="flex: 1;">
+                <h2 style="
+                    font-family: var(--font-display);
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    margin: 0 0 4px 0;
+                    line-height: 1.2;
+                ">${data.title}</h2>
+                <div style="
+                    width: 40px;
+                    height: 3px;
+                    border-radius: 99px;
+                    background: var(--accent);
+                    opacity: 0.6;
+                "></div>
+            </div>
+        </div>
+
+        <p style="
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin: 12px 0 24px 0;
+            padding: 16px 20px;
+            background: var(--bg-elevated-glass);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent);
+        ">${data.content}</p>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+            <button onclick="closeDisclaimer()" style="
+                font-family: var(--font);
+                font-size: 14px;
+                font-weight: 500;
+                padding: 10px 28px;
+                border-radius: var(--radius-full);
+                border: 1px solid var(--border-glass);
+                background: var(--bg-input-glass);
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: var(--transition);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            " onmouseover="this.style.background='var(--border-glass)'" onmouseout="this.style.background='var(--bg-input-glass)'">
+                Cerrar
+            </button>
+            <button onclick="closeDisclaimer()" style="
+                font-family: var(--font);
+                font-size: 14px;
+                font-weight: 500;
+                padding: 10px 28px;
+                border-radius: var(--radius-full);
+                border: none;
+                background: var(--accent);
+                color: #fff;
+                cursor: pointer;
+                transition: var(--transition);
+                box-shadow: 0 4px 16px var(--accent-glow);
+            " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                Entendido
+            </button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    if (typeof syncOpenOverlaysToViewport === 'function') syncOpenOverlaysToViewport();
+    
+    // Cerrar al hacer clic fuera
+    overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeDisclaimer();
+    });
+    
+    // Cerrar con Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeDisclaimer();
+    });
+    
+    // Inyectar estilos de animación si no existen
+    if (!document.getElementById('disclaimer-styles')) {
+        const style = document.createElement('style');
+        style.id = 'disclaimer-styles';
+        style.textContent = `
+            @keyframes disclaimerFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes disclaimerSlideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px) scale(0.96);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            /* Personalización del scroll para que no se vea un fondo extra */
+            #disclaimer-overlay .disclaimer-scroll::-webkit-scrollbar {
+                width: 4px;
+            }
+            #disclaimer-overlay .disclaimer-scroll::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            #disclaimer-overlay .disclaimer-scroll::-webkit-scrollbar-thumb {
+                background: var(--border-glass-strong);
+                border-radius: 99px;
+            }
+        `;
+        document.head.appendChild(style);
     }
-    
-    // startup
-    init();   
+};
 
+// Función para cerrar el disclaimer
+window.closeDisclaimer = function() {
+    const overlay = document.getElementById('disclaimer-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 250);
+    }
+};
+            // ---------- Inicialización ----------
+            async function init() {
+                await populateFilters();
+                await loadStations(false);
+                updateFavBadge();
+                // Si hay favoritos, garantiza que los datos completos estén cargados
+                if (favorites.length > 0 && favoriteStations.length === 0) {
+                    // Intenta recuperarlos de las estaciones actuales
+                    const favStations = stations.filter(s => favorites.includes(s.stationuuid));
+                    if (favStations.length > 0) {
+                        favoriteStations = favStations;
+                        try {
+                            localStorage.setItem('gr_favs_data', JSON.stringify(favoriteStations));
+                        } catch {}
+                    }
+                }
+                if (sectionFav.classList.contains('active')) {
+                    renderFavorites();
+                }
+            }
+            
+            init().catch(err => {
+                console.error('Init error:', err);
+                showToast('Error al iniciar la aplicación', 'error');
+            });
 
+        })();
