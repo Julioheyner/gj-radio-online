@@ -1199,3 +1199,66 @@ window.closeDisclaimer = function() {
             });
 
         })();
+
+/*---------
+  BOTTOM NAV (#bottomNav) — auto-hide no scroll
+---------*/
+(function initBottomNavAutoHide() {
+    const nav = document.getElementById('bottomNav');
+    if (!nav) return;
+
+    let lastY = window.scrollY;
+    let ticking = false;
+    const THRESHOLD = 8;     // px mínimos para considerar mudança de direção
+    const HIDE_AFTER = 120;  // só esconde depois de rolar isso pra baixo
+    let lockUntil = 0;       // trava temporária (evita esconder ao clicar)
+
+    function update() {
+        const now = performance.now();
+        if (now < lockUntil) {
+            lastY = window.scrollY;
+            ticking = false;
+            return;
+        }
+
+        const y = window.scrollY;
+        const delta = y - lastY;
+
+        // No topo da página, sempre visível
+        if (y < HIDE_AFTER) {
+            nav.classList.remove('bottom-nav--hidden');
+            lastY = y;
+            ticking = false;
+            return;
+        }
+
+        // Scroll para baixo (delta > 0) → esconde
+        if (delta > THRESHOLD) {
+            nav.classList.add('bottom-nav--hidden');
+        }
+        // Scroll para cima (delta < 0) → mostra
+        else if (delta < -THRESHOLD) {
+            nav.classList.remove('bottom-nav--hidden');
+        }
+
+        lastY = y;
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
+    }, { passive: true });
+
+    // Ao clicar em qualquer .nav-item, mantém a barra visível por 400ms
+    // (evita "piscar" quando o conteúdo muda e o scroll reseta)
+    nav.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            nav.classList.remove('bottom-nav--hidden');
+            lockUntil = performance.now() + 400;
+            lastY = window.scrollY;
+        });
+    });
+})();
