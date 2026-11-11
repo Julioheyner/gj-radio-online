@@ -267,7 +267,16 @@ GLASSMORPHISM — Fondo suave + vidrio
             padding-left: 8px;
             padding-right: 8px;
             z-index: 300;
+            transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.35s ease;
+            will-change: transform;
         }
+
+        /* Estado escondido */
+        .bottom-nav.bottom-nav--hidden {
+            transform: translateY(calc(100% + 8px));
+        }
+
         .bottom-nav .nav-item {
             display: flex;
             flex-direction: column;
